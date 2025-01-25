@@ -1,9 +1,7 @@
-import './App.css'
+import { ReclaimDemo } from "./ReclaimDemo";
 
 function App() {
-  return (
-    <button>Click me</button>
-  )
+  return <ReclaimDemo />;
 }
 
-export default App
+export default App;
