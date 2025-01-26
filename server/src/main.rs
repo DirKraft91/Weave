@@ -31,7 +31,7 @@ struct CommonArgs {
     celestia_url: String,
 
     /// The address to listen on for the node's webserver
-    #[arg(long, default_value = "0.0.0.0:3000")]
+    #[arg(long, default_value = "0.0.0.0:8080")]
     listen_addr: String,
 
     /// The auth token to use when connecting to Celestia

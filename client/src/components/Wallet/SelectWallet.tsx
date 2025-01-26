@@ -31,7 +31,7 @@ export const SelectWallet = ({
 
       setSelectedWallet(chainWallet);
 
-      console.log(base64PublicKey, 'Public Key');
+      console.log(base64PublicKey, 'Public Key', account);
     } catch (error) {
       console.error(error);
     }

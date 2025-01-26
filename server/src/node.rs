@@ -1,12 +1,20 @@
 use anyhow::{Context, Result};
 use async_lock::Mutex;
-use axum::routing::post;
-use axum::Router;
 use celestia_rpc::{BlobClient, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob, TxConfig};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Notify;
+use reclaim_rust_sdk::verify_proof;
+use serde_json::json;
+use dotenv::dotenv;
+use std::env;
+use axum::{
+    routing::{get, post},
+    http::StatusCode,
+    Json, Router,
+};
+use serde::{Deserialize, Serialize};
 
 use crate::tx::Batch;
 use crate::webserver::submit_tx;
@@ -43,7 +51,7 @@ impl Default for Config {
         Config {
             namespace: Namespace::new_v0(&[42, 42, 42, 42]).unwrap(),
             start_height: 1,
-            listen_addr: "0.0.0.0:3000".to_string(),
+            listen_addr: "0.0.0.0:8080".to_string(),
             celestia_url: "ws://0.0.0.0:26658".to_string(),
             auth_token: None,
             batch_interval: DEFAULT_BATCH_INTERVAL,
@@ -209,7 +217,12 @@ impl Node {
     pub async fn start_server(self: Arc<Self>) -> Result<()> {
         let app = Router::new()
             .route("/submit_tx", post(submit_tx))
+            .route("/", get(root))
+            .route("/validate", post(validate_proof))
             .with_state(self.clone());
+
+
+
 
         let listen_addr = self.cfg.listen_addr.clone();
         info!("webserver listening on {}", listen_addr);
@@ -217,6 +230,7 @@ impl Node {
             .serve(app.into_make_service())
             .await
             .context("Failed to start server")
+
     }
 
     pub async fn start(self: Arc<Self>) -> Result<()> {
@@ -246,3 +260,65 @@ impl Node {
         Ok(())
     }
 }
+
+#[derive(Deserialize)]
+struct ValidateProofPayload {
+    proof: serde_json::Value,
+}
+
+#[derive(Serialize)]
+struct ValidationResponse {
+    is_valid: bool,
+    message: String,
+}
+
+async fn root() -> &'static str {
+    "Hello, World!"
+}
+
+async fn validate_proof(Json(payload): Json<ValidateProofPayload>,) -> (StatusCode, Json<ValidationResponse>) {
+    let proof: reclaim_rust_sdk::Proof = match serde_json::from_value(payload.proof) {
+      Ok(p) => p,
+      Err(e) => {
+          return (
+              StatusCode::BAD_REQUEST,
+              Json(ValidationResponse {
+                  is_valid: false,
+                  message: format!("Failed to parse proof: {}", e),
+              }),
+          );
+      }
+  };
+
+   // Validate the proof using the reclaim_rust_sdk
+   match verify_proof(&proof).await {
+    Ok(is_valid) => {
+        if is_valid {
+            (
+                StatusCode::OK,
+                Json(ValidationResponse {
+                    is_valid: true,
+                    message: "Proof is valid.".to_string(),
+                }),
+            )
+        } else {
+            (
+                StatusCode::OK,
+                Json(ValidationResponse {
+                    is_valid: false,
+                    message: "Proof is invalid.".to_string(),
+                }),
+            )
+        }
+    }
+    Err(e) => (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(ValidationResponse {
+            is_valid: false,
+            message: format!("Error verifying proof: {:?}", e),
+        }),
+    ),
+  }
+}
+
+
