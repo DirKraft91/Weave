@@ -1,10 +1,4 @@
-import { wallets as _wallets } from 'cosmos-kit';
-import { MainWalletBase } from '@cosmos-kit/core';
+import { wallets as keplrwallets } from '@cosmos-kit/keplr';
+import { wallets as leapwallets } from '@cosmos-kit/leap';
 
-// eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-export const keplrWalletName = _wallets.keplr.extension?.walletName!;
-
-export const wallets = [
-  _wallets.keplr.extension,
-  _wallets.leap.extension,
-] as MainWalletBase[];
+export const wallets = [...keplrwallets, ...leapwallets];
