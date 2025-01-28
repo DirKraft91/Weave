@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Dispatch, SetStateAction } from 'react';
 import { MainWalletBase, ChainWalletBase } from '@cosmos-kit/core';
 import { Keplr } from '@keplr-wallet/types';
 
@@ -11,7 +10,7 @@ import { useChainStore } from '@/contexts';
 export const SelectWallet = ({
   setSelectedWallet,
 }: {
-  setSelectedWallet: Dispatch<SetStateAction<ChainWalletBase | null>>;
+  setSelectedWallet: (wallet: ChainWalletBase | null) => void;
 }) => {
   const { selectedChain } = useChainStore();
 
@@ -19,19 +18,17 @@ export const SelectWallet = ({
     const chainWallet = wallet.getChainWallet(selectedChain)!;
     const chainInfo = makeKeplrChainInfo(chainWallet.chain, chainWallet.assets[0]);
 
+    if (!chainWallet) {
+      throw new Error('ChainWallet is not exist');
+    }
+
     try {
       if (wallet.walletName.startsWith('keplr')) {
         // @ts-ignore
         await (chainWallet.client?.client as Keplr).experimentalSuggestChain(chainInfo);
       }
       await chainWallet.connect();
-      // @ts-ignore
-      const account = await chainWallet.client.getAccount(chainInfo.chainId);
-      const base64PublicKey = btoa(String.fromCharCode(...account.pubkey));
-
       setSelectedWallet(chainWallet);
-
-      console.log(base64PublicKey, 'Public Key', account);
     } catch (error) {
       console.error(error);
     }
