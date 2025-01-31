@@ -2,16 +2,15 @@ use anyhow::{Context, Result};
 use async_lock::Mutex;
 use celestia_rpc::{BlobClient, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob, TxConfig};
-use std::sync::Arc;
+use std::str::FromStr;
+use std::{sync::Arc};
 use std::time::Duration;
 use tokio::sync::Notify;
 use reclaim_rust_sdk::verify_proof;
-use serde_json::json;
-use dotenv::dotenv;
-use std::env;
 use axum::{
     routing::{get, post},
-    http::StatusCode,
+    response::{ IntoResponse, Json as AxumJson },
+    http as AxumHttp,
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -19,6 +18,11 @@ use serde::{Deserialize, Serialize};
 use crate::tx::Batch;
 use crate::webserver::submit_tx;
 use crate::{state::State, tx::Transaction};
+use tower_http::cors::{CorsLayer, Any};
+use http::{
+    header::HeaderName,
+    method::Method
+};
 
 const DEFAULT_BATCH_INTERVAL: Duration = Duration::from_secs(3);
 
@@ -215,14 +219,21 @@ impl Node {
     }
 
     pub async fn start_server(self: Arc<Self>) -> Result<()> {
+        let cors = CorsLayer::new()
+            .allow_origin(Any) 
+            .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
+            .allow_headers(vec![
+                HeaderName::from_static("content-type"),
+                HeaderName::from_static("authorization"),
+            ]);
+
         let app = Router::new()
             .route("/submit_tx", post(submit_tx))
             .route("/", get(root))
             .route("/validate", post(validate_proof))
+            .route("/auth", post(sign_in_wallet))
+            .layer(cors)
             .with_state(self.clone());
-
-
-
 
         let listen_addr = self.cfg.listen_addr.clone();
         info!("webserver listening on {}", listen_addr);
@@ -261,6 +272,55 @@ impl Node {
     }
 }
 
+
+use secp256k1::{
+    ecdsa::Signature as Secp256k1Signature,
+    Message as Secp256k1Message,
+    PublicKey as Secp256k1VerifyingKey,
+    Secp256k1,
+};
+use base64; // Импортируем base64
+
+#[derive(Debug, Deserialize)]
+struct SignInWalletPayload {
+    message: String,
+    signature: String,
+    public_key: String,
+}
+
+#[derive(Serialize)]
+struct SignInWalletResponse {
+    auth: bool,
+}
+
+async fn sign_in_wallet(Json(body): Json<SignInWalletPayload>) -> impl IntoResponse {    
+    let secp = Secp256k1::new();
+    // let message_hash = Sha256::digest(&body.message.as_bytes());
+    // println!("Keplr подписывает SHA-256 хэш: {:x}", message_hash);
+
+    let message_bytes =  base64::decode(&body.message).expect("Invalid message to bytes");
+    let message = Secp256k1Message::from_slice(&message_bytes).expect("Invalid message");
+    println!("Secp256k1Message: {:?}", &message);
+    
+    let signature_bytes =  base64::decode(&body.signature).expect("Invalid signature to bytes");
+    let signature = if let Ok(sig) = Secp256k1Signature::from_der(&signature_bytes) {
+        sig
+    } else if let Ok(sig) = Secp256k1Signature::from_compact(&signature_bytes) {
+        sig
+    } else {
+        panic!("Ошибка: Неверный формат подписи!");
+    };
+
+    let public_key_bytes = base64::decode(&body.public_key).expect("Invalid public key to bytes");
+    let public_key = Secp256k1VerifyingKey::from_slice(&public_key_bytes).expect("Invalid public key");
+    
+    match secp.verify_ecdsa(&message, &signature, &public_key) {
+        Ok(_) => (AxumHttp::StatusCode::OK, AxumJson(SignInWalletResponse { auth: true })).into_response(),
+        Err(e) => (AxumHttp::StatusCode::UNAUTHORIZED, format!("{}", e)).into_response(),
+    }
+}
+
+
 #[derive(Deserialize)]
 struct ValidateProofPayload {
     proof: serde_json::Value,
@@ -269,56 +329,28 @@ struct ValidateProofPayload {
 #[derive(Serialize)]
 struct ValidationResponse {
     is_valid: bool,
-    message: String,
 }
 
 async fn root() -> &'static str {
     "Hello, World!"
 }
 
-async fn validate_proof(Json(payload): Json<ValidateProofPayload>,) -> (StatusCode, Json<ValidationResponse>) {
+
+async fn validate_proof(Json(payload): Json<ValidateProofPayload>) -> impl IntoResponse {
     let proof: reclaim_rust_sdk::Proof = match serde_json::from_value(payload.proof) {
-      Ok(p) => p,
-      Err(e) => {
-          return (
-              StatusCode::BAD_REQUEST,
-              Json(ValidationResponse {
-                  is_valid: false,
-                  message: format!("Failed to parse proof: {}", e),
-              }),
-          );
-      }
-  };
+        Ok(p) => p,
+        Err(_) => return AxumHttp::StatusCode::BAD_REQUEST.into_response(),
+    };
 
-   // Validate the proof using the reclaim_rust_sdk
-   match verify_proof(&proof).await {
-    Ok(is_valid) => {
-        if is_valid {
-            (
-                StatusCode::OK,
-                Json(ValidationResponse {
-                    is_valid: true,
-                    message: "Proof is valid.".to_string(),
-                }),
-            )
-        } else {
-            (
-                StatusCode::OK,
-                Json(ValidationResponse {
-                    is_valid: false,
-                    message: "Proof is invalid.".to_string(),
-                }),
-            )
+    match verify_proof(&proof).await {
+        Ok(is_valid) => {
+            if is_valid {
+                (AxumHttp::StatusCode::OK, AxumJson(ValidationResponse { is_valid })).into_response()
+            } else {
+                AxumHttp::StatusCode::UNPROCESSABLE_ENTITY.into_response()
+            }
         }
+        Err(_) => AxumHttp::StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
-    Err(e) => (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(ValidationResponse {
-            is_valid: false,
-            message: format!("Error verifying proof: {:?}", e),
-        }),
-    ),
-  }
 }
-
 
