@@ -1,4 +1,4 @@
-import { FC, useEffect } from 'react';
+import { FC } from 'react';
 import { useWalletClient } from '@cosmos-kit/react';
 import { useChainStore, useWalletStore } from '@/contexts';
 
@@ -32,8 +32,9 @@ export const Auth: FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          signature: signResult?.signature,
+          signer: account.address,
           public_key: signResult?.pub_key.value,
+          signature: signResult?.signature,
           message,
         }),
       });

@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use async_lock::Mutex;
 use celestia_rpc::{BlobClient, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob, TxConfig};
+use std::fmt::{ Error };
 use std::str::FromStr;
 use std::{sync::Arc};
 use std::time::Duration;
@@ -273,19 +274,15 @@ impl Node {
 }
 
 
-use secp256k1::{
-    ecdsa::Signature as Secp256k1Signature,
-    Message as Secp256k1Message,
-    PublicKey as Secp256k1VerifyingKey,
-    Secp256k1,
-};
-use base64; // Импортируем base64
+use ecdsa::signature::DigestVerifier;
+use k256::sha2::{Digest, Sha256};
 
-#[derive(Debug, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct SignInWalletPayload {
-    message: String,
-    signature: String,
     public_key: String,
+    signature: String,
+    signer: String,
+    message: String,
 }
 
 #[derive(Serialize)]
@@ -293,28 +290,32 @@ struct SignInWalletResponse {
     auth: bool,
 }
 
+fn generate_amino_transaction_string(signer: &str, data: &str) -> String {
+    format!("{{\"account_number\":\"0\",\"chain_id\":\"\",\"fee\":{{\"amount\":[],\"gas\":\"0\"}},\"memo\":\"\",\"msgs\":[{{\"type\":\"sign/MsgSignData\",\"value\":{{\"data\":\"{}\",\"signer\":\"{}\"}}}}],\"sequence\":\"0\"}}", data, signer)
+}
+
+fn verify_arbitrary(
+    account_addr: &str,
+    public_key: &str,
+    signature: &str,
+    data: &[u8],
+) -> Result<(), Error> {
+    let rpc_signature_to_compare = hex::encode(base64::decode(&signature).unwrap());
+    let signature: k256::ecdsa::Signature =
+        ecdsa::Signature::from_str(&rpc_signature_to_compare).unwrap();
+    let digest = Sha256::new_with_prefix(generate_amino_transaction_string(
+        account_addr,
+        &base64::encode(data),
+    ));
+    let pk = tendermint::PublicKey::from_raw_secp256k1(base64::decode(public_key).unwrap().as_slice())
+        .unwrap();
+    let vk = pk.secp256k1().unwrap();
+
+    vk.verify_digest(digest, &signature).map_err(|_| Error)
+}
+
 async fn sign_in_wallet(Json(body): Json<SignInWalletPayload>) -> impl IntoResponse {    
-    let secp = Secp256k1::new();
-    // let message_hash = Sha256::digest(&body.message.as_bytes());
-    // println!("Keplr подписывает SHA-256 хэш: {:x}", message_hash);
-
-    let message_bytes =  base64::decode(&body.message).expect("Invalid message to bytes");
-    let message = Secp256k1Message::from_slice(&message_bytes).expect("Invalid message");
-    println!("Secp256k1Message: {:?}", &message);
-    
-    let signature_bytes =  base64::decode(&body.signature).expect("Invalid signature to bytes");
-    let signature = if let Ok(sig) = Secp256k1Signature::from_der(&signature_bytes) {
-        sig
-    } else if let Ok(sig) = Secp256k1Signature::from_compact(&signature_bytes) {
-        sig
-    } else {
-        panic!("Ошибка: Неверный формат подписи!");
-    };
-
-    let public_key_bytes = base64::decode(&body.public_key).expect("Invalid public key to bytes");
-    let public_key = Secp256k1VerifyingKey::from_slice(&public_key_bytes).expect("Invalid public key");
-    
-    match secp.verify_ecdsa(&message, &signature, &public_key) {
+    match verify_arbitrary(&body.signer, &body.public_key, &body.signature, &body.message.as_bytes()) {
         Ok(_) => (AxumHttp::StatusCode::OK, AxumJson(SignInWalletResponse { auth: true })).into_response(),
         Err(e) => (AxumHttp::StatusCode::UNAUTHORIZED, format!("{}", e)).into_response(),
     }
