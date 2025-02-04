@@ -7,7 +7,7 @@ use std::str::FromStr;
 use std::{sync::Arc};
 use std::time::Duration;
 use tokio::sync::Notify;
-use reclaim_rust_sdk::verify_proof;
+use reclaim_rust_sdk::{ Proof as ReclaimProof };
 use axum::{
     routing::{get, post},
     response::{ IntoResponse, Json as AxumJson },
@@ -24,6 +24,7 @@ use http::{
     header::HeaderName,
     method::Method
 };
+use crate::proof::{ProofService, TxPayloadProvider, ProofServiceError, ReclaimProofService};
 
 const DEFAULT_BATCH_INTERVAL: Duration = Duration::from_secs(3);
 
@@ -230,8 +231,7 @@ impl Node {
 
         let app = Router::new()
             .route("/submit_tx", post(submit_tx))
-            .route("/", get(root))
-            .route("/validate", post(validate_proof))
+            .route("/proof", post(apply_proof))
             .route("/auth", post(sign_in_wallet))
             .layer(cors)
             .with_state(self.clone());
@@ -316,42 +316,37 @@ fn verify_arbitrary(
 
 async fn sign_in_wallet(Json(body): Json<SignInWalletPayload>) -> impl IntoResponse {    
     match verify_arbitrary(&body.signer, &body.public_key, &body.signature, &body.message.as_bytes()) {
-        Ok(_) => (AxumHttp::StatusCode::OK, AxumJson(SignInWalletResponse { auth: true })).into_response(),
+        Ok(result) => {
+            (AxumHttp::StatusCode::OK, AxumJson(SignInWalletResponse { auth: true })).into_response()
+        },
         Err(e) => (AxumHttp::StatusCode::UNAUTHORIZED, format!("{}", e)).into_response(),
     }
 }
 
 
-#[derive(Deserialize)]
-struct ValidateProofPayload {
-    proof: serde_json::Value,
+#[derive(Deserialize, Serialize)]
+struct ProofApplyPayload {
+    proof: ReclaimProof,
+    provider: String,
 }
 
 #[derive(Serialize)]
-struct ValidationResponse {
-    is_valid: bool,
+struct ProofApplyResponse {
+    success: bool,
 }
 
-async fn root() -> &'static str {
-    "Hello, World!"
-}
-
-
-async fn validate_proof(Json(payload): Json<ValidateProofPayload>) -> impl IntoResponse {
-    let proof: reclaim_rust_sdk::Proof = match serde_json::from_value(payload.proof) {
-        Ok(p) => p,
-        Err(_) => return AxumHttp::StatusCode::BAD_REQUEST.into_response(),
-    };
-
-    match verify_proof(&proof).await {
-        Ok(is_valid) => {
-            if is_valid {
-                (AxumHttp::StatusCode::OK, AxumJson(ValidationResponse { is_valid })).into_response()
-            } else {
-                AxumHttp::StatusCode::UNPROCESSABLE_ENTITY.into_response()
+async fn apply_proof(Json(payload): Json<ProofApplyPayload>) -> impl IntoResponse {
+    match ProofService::apply_proof(&ReclaimProofService {
+        data: payload.proof,
+        provider: TxPayloadProvider::from_str(&payload.provider).unwrap(),
+    }).await {
+        Ok(()) => (AxumHttp::StatusCode::OK, AxumJson(ProofApplyResponse { success: true })).into_response(),
+        Err(e) => {
+            match e {
+                ProofServiceError::ReclaimProofNotVerifiedError(e) => (AxumHttp::StatusCode::UNAUTHORIZED, format!("{}", e)).into_response(),
+                _ => (AxumHttp::StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", e)).into_response(),
             }
-        }
-        Err(_) => AxumHttp::StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        },
     }
 }
 

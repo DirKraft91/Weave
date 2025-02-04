@@ -1,32 +1,41 @@
-import React, { useState } from "react";
-import QRCode from "react-qr-code";
-import { ReclaimProofRequest } from "@reclaimprotocol/js-sdk";
+import React, { useState } from 'react';
+import QRCode from 'react-qr-code';
+import { Proof, ReclaimProofRequest } from '@reclaimprotocol/js-sdk';
 
 export function ReclaimDemo() {
   // State to store the verification request URL
-  const [requestUrl, setRequestUrl] = useState("");
+  const [requestUrl, setRequestUrl] = useState('');
   const [proofs, setProofs] = useState([]);
+
+  const validateProof = async (proofs: Proof | Proof[]) => {
+    try {
+      const response = await fetch('http://localhost:8080/proof', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proof: proofs, provider: 'google' }),
+      });
+      const result = await response.json();
+      console.log('Proof registered successfully:', result);
+    } catch (error) {
+      console.error('Failed to register proof:', error);
+    }
+  };
 
   const getVerificationReq = async () => {
     // Your credentials from the Reclaim Developer Portal
     // Replace these with your actual credentials
 
-    const APP_ID = "0xA5252cC9919b29cc169371177f86F938542fb28e";
-    const APP_SECRET =
-      "0x0fbaf22253010012b8ce57760f23cda7041096ee1a93f62eedded58f8a3dc298";
-    const PROVIDER_ID = "71901e6a-0548-414f-affb-c60d66e9648g";
+    const APP_ID = '0xbfB817DdcF51E591A1a9261eaDb57F581BB40c04';
+    const APP_SECRET = '0xcbd3a376cca4aaf5abfb98a76f840e414df9b07d96a471f9dac102fb2dd9cddb';
+    const PROVIDER_ID = 'f9f383fd-32d9-4c54-942f-5e9fda349762';
 
     // Initialize the Reclaim SDK with your credentials
-    const reclaimProofRequest = await ReclaimProofRequest.init(
-      APP_ID,
-      APP_SECRET,
-      PROVIDER_ID
-    );
+    const reclaimProofRequest = await ReclaimProofRequest.init(APP_ID, APP_SECRET, PROVIDER_ID);
 
     // Generate the verification request URL
     const requestUrl = await reclaimProofRequest.getRequestUrl();
 
-    console.log("Request URL:", requestUrl);
+    console.log('Request URL:', requestUrl);
 
     setRequestUrl(requestUrl);
 
@@ -38,31 +47,21 @@ export function ReclaimDemo() {
         // - Updating UI to show verification success
         // - Storing verification status
         // - Redirecting to another page
-        if (proofs && typeof proofs !== "string") {
-          console.log("Proof received:", proofs?.claimData.context);
+        if (proofs && typeof proofs !== 'string') {
+          console.log('Proof received:', proofs?.claimData.context);
 
           // Send the proof to your backend service for Prism integration
-          try {
-            const response = await fetch("http:/localhost:8080/validate", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ proof: proofs }),
-            });
-            const result = await response.json();
-            console.log("Proof registered successfully:", result);
-          } catch (error) {
-            console.error("Failed to register proof:", error);
-          }
+          validateProof(proofs);
 
-          console.log("Verification success", proofs);
+          console.log('Verification success', proofs);
           setProofs(proofs as any);
         } else {
-          console.error("Invalid proof:", proofs);
+          console.error('Invalid proof:', proofs);
         }
       },
       // Called if there's an error during verification
       onError: (error) => {
-        console.error("Verification failed", error);
+        console.error('Verification failed', error);
 
         // Add your error handling logic here, such as:
         // - Showing error message to user
@@ -75,11 +74,10 @@ export function ReclaimDemo() {
   return (
     <>
       <button onClick={getVerificationReq}>Get Verification Request</button>
-
       {/* Display QR code when URL is available */}
 
       {requestUrl && (
-        <div style={{ margin: "20px 0" }}>
+        <div style={{ margin: '20px 0' }}>
           <QRCode value={requestUrl} />
         </div>
       )}

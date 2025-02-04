@@ -49,6 +49,7 @@ ecdsa = { version =  "0.14.8", features = ["der", "arithmetic", "digest"] }
 k256 = "0.11.6"
 secp256k1 = "0.25.0"
 tendermint = { version =  "0.28.0", features = ["secp256k1"] }
+chrono = "0.4.39"
 
 
 # quote = "1.0"
