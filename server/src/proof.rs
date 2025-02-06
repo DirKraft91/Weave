@@ -1,27 +1,43 @@
 use reclaim_rust_sdk::{ Proof as ReclaimProof, ProofNotVerifiedError as ReclaimProofNotVerifiedError };
 use std::str::FromStr;
+use std::string::ToString;
 use serde_json::Value;
-use chrono::{ Utc };
+use chrono::Utc;
 use thiserror::Error;
 
-pub enum TxPayloadProvider {
+pub enum IdentityProvider {
     X,
     Google,
     Github,
+    Linkedin
 }
 
-impl FromStr for TxPayloadProvider {
+impl FromStr for IdentityProvider {
     type Err = String;  // Custom error type
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "x" => Ok(TxPayloadProvider::X),
-            "google" => Ok(TxPayloadProvider::Google),
-            "github" => Ok(TxPayloadProvider::Github),
+            "x" => Ok(IdentityProvider::X),
+            "google" => Ok(IdentityProvider::Google),
+            "github" => Ok(IdentityProvider::Github),
+            "linkedin" => Ok(IdentityProvider::Linkedin),
             _ => Err(format!("Invalid provider: {}", s)),
         }
     }
 }
+
+impl ToString for IdentityProvider {
+    fn to_string(&self) -> String {
+        match self {
+            IdentityProvider::X => "x".to_string(),
+            IdentityProvider::Google => "google".to_string(),
+            IdentityProvider::Github => "github".to_string(),
+            IdentityProvider::Linkedin => "linkedin".to_string(),
+        }
+    }
+}
+
+
 
 #[derive(Debug, Error)]
 pub enum ProofServiceError {
@@ -42,29 +58,41 @@ pub enum ProofServiceError {
 }
 
 #[derive(Debug)]
-struct GooggleProviderTxPayload {
+struct GoogleProviderIdentityRecord {
     proof: ReclaimProof,
     email: String,
     created_at: i64,
+    provider: String,
 }
 #[derive(Debug)]
-struct XProviderTxPayload {
+struct XProviderIdentityRecord {
     proof: ReclaimProof,
     nickname: String,
     created_at: i64,
+    provider: String,
 }
 #[derive(Debug)]
-struct GithubProviderTxPayload {
+struct GithubProviderIdentityRecord {
     proof: ReclaimProof,
     username: String,
     created_at: i64,
+    provider: String,
 }
 
 #[derive(Debug)]
-enum TxPayload {
-    X(XProviderTxPayload),
-    Google(GooggleProviderTxPayload),
-    Github(GithubProviderTxPayload),
+struct LinkedinProviderIdentityRecord {
+    proof: ReclaimProof,
+    username: String,
+    created_at: i64,
+    provider: String,
+}
+
+#[derive(Debug)]
+enum IdentityRecord {
+    X(XProviderIdentityRecord),
+    Google(GoogleProviderIdentityRecord),
+    Github(GithubProviderIdentityRecord),
+    Linkedin(LinkedinProviderIdentityRecord),
 }
 
 pub trait ProofService {
@@ -73,13 +101,13 @@ pub trait ProofService {
 
 pub struct ReclaimProofService {
     pub(crate) data: ReclaimProof,
-    pub(crate) provider: TxPayloadProvider,
+    pub(crate) provider: IdentityProvider,
 }
 
 impl ReclaimProofService {
-    fn prepare_payload_to_apply(&self) -> Result<TxPayload, ProofServiceError> {
+    fn prepare_payload_to_apply(&self) -> Result<IdentityRecord, ProofServiceError> {
         match self.provider {
-            TxPayloadProvider::X => {
+            IdentityProvider::X => {
                 let context: Value = serde_json::from_str(&self.data.claim_data.context)
                 .map_err(ProofServiceError::ContextDeserializationError)?;
 
@@ -88,28 +116,31 @@ impl ReclaimProofService {
                     .ok_or(ProofServiceError::ScreennameNotFound)?
                     .to_string();
 
-                Ok(TxPayload::X(XProviderTxPayload {
+                Ok(IdentityRecord::X(XProviderIdentityRecord {
                     proof: self.data.clone(),
                     nickname,
                     created_at: Utc::now().timestamp(),
+                    provider: self.provider.to_string()
                 }))
             },
-            TxPayloadProvider::Google => {
+            IdentityProvider::Google => {
                 let context: Value = serde_json::from_str(&self.data.claim_data.context)
                 .map_err(ProofServiceError::ContextDeserializationError)?;
 
                 let email = context["extractedParameters"]["email"]
                     .as_str()
                     .ok_or(ProofServiceError::EmailNotFound)?
-                    .to_string();
+                    .trim_matches('"')
+                    .to_lowercase();
 
-                Ok(TxPayload::Google(GooggleProviderTxPayload {
+                Ok(IdentityRecord::Google(GoogleProviderIdentityRecord {
                     proof: self.data.clone(),
                     email,
                     created_at: Utc::now().timestamp(),
+                    provider: self.provider.to_string(),
                 }))
             },
-            TxPayloadProvider::Github => {
+            IdentityProvider::Github => {
                 let context: Value = serde_json::from_str(&self.data.claim_data.context)
                 .map_err(ProofServiceError::ContextDeserializationError)?;
 
@@ -118,12 +149,29 @@ impl ReclaimProofService {
                     .ok_or(ProofServiceError::UsernameNotFound)?
                     .to_string();
 
-                Ok(TxPayload::Github(GithubProviderTxPayload {
+                Ok(IdentityRecord::Github(GithubProviderIdentityRecord {
                     proof: self.data.clone(),
                     username,
                     created_at: Utc::now().timestamp(),
+                    provider: self.provider.to_string(),
                 }))
             },
+            IdentityProvider::Linkedin => {
+                let context: Value = serde_json::from_str(&self.data.claim_data.context)
+                .map_err(ProofServiceError::ContextDeserializationError)?;
+
+                let username = context["extractedParameters"]["Username"]
+                    .as_str()
+                    .ok_or(ProofServiceError::UsernameNotFound)?
+                    .to_string();
+
+                Ok(IdentityRecord::Linkedin(LinkedinProviderIdentityRecord {
+                    proof: self.data.clone(),
+                    username,
+                    created_at: Utc::now().timestamp(),
+                    provider: self.provider.to_string(),
+                }))
+            }
         }
     }
 
@@ -144,7 +192,7 @@ impl ReclaimProofService {
 impl ProofService for ReclaimProofService {
     async fn apply_proof(&self) -> Result<(), ProofServiceError> {
         self.validate().await?;
-        let tx_payload = self.prepare_payload_to_apply().unwrap();
+        let tx_payload: IdentityRecord = self.prepare_payload_to_apply()?;
 
         println!("tx_payload: {:?}", tx_payload);
         Ok(())

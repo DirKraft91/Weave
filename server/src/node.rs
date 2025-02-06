@@ -24,7 +24,7 @@ use http::{
     header::HeaderName,
     method::Method
 };
-use crate::proof::{ProofService, TxPayloadProvider, ProofServiceError, ReclaimProofService};
+use crate::proof::{ProofService, IdentityProvider, ProofServiceError, ReclaimProofService};
 
 const DEFAULT_BATCH_INTERVAL: Duration = Duration::from_secs(3);
 
@@ -310,13 +310,12 @@ fn verify_arbitrary(
     let pk = tendermint::PublicKey::from_raw_secp256k1(base64::decode(public_key).unwrap().as_slice())
         .unwrap();
     let vk = pk.secp256k1().unwrap();
-
     vk.verify_digest(digest, &signature).map_err(|_| Error)
 }
 
 async fn sign_in_wallet(Json(body): Json<SignInWalletPayload>) -> impl IntoResponse {    
     match verify_arbitrary(&body.signer, &body.public_key, &body.signature, &body.message.as_bytes()) {
-        Ok(result) => {
+        Ok(()) => {
             (AxumHttp::StatusCode::OK, AxumJson(SignInWalletResponse { auth: true })).into_response()
         },
         Err(e) => (AxumHttp::StatusCode::UNAUTHORIZED, format!("{}", e)).into_response(),
@@ -338,12 +337,12 @@ struct ProofApplyResponse {
 async fn apply_proof(Json(payload): Json<ProofApplyPayload>) -> impl IntoResponse {
     match ProofService::apply_proof(&ReclaimProofService {
         data: payload.proof,
-        provider: TxPayloadProvider::from_str(&payload.provider).unwrap(),
+        provider: IdentityProvider::from_str(&payload.provider).unwrap(),
     }).await {
         Ok(()) => (AxumHttp::StatusCode::OK, AxumJson(ProofApplyResponse { success: true })).into_response(),
         Err(e) => {
             match e {
-                ProofServiceError::ReclaimProofNotVerifiedError(e) => (AxumHttp::StatusCode::UNAUTHORIZED, format!("{}", e)).into_response(),
+                ProofServiceError::ReclaimProofNotVerifiedError(e) => (AxumHttp::StatusCode::BAD_REQUEST, format!("{}", e)).into_response(),
                 _ => (AxumHttp::StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", e)).into_response(),
             }
         },
