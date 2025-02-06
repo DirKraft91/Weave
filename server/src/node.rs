@@ -5,7 +5,7 @@ use celestia_types::{nmt::Namespace, Blob, TxConfig};
 use std::fmt::{ Error };
 use std::str::FromStr;
 use std::{sync::Arc};
-use std::time::Duration;
+use std::time::Duration as StdDuration;
 use tokio::sync::Notify;
 use reclaim_rust_sdk::{ Proof as ReclaimProof };
 use axum::{
@@ -15,6 +15,8 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use jsonwebtoken::{encode, EncodingKey, Header};
+use chrono::{Utc, Duration as ChronoDuration};
 
 use crate::tx::Batch;
 use crate::webserver::submit_tx;
@@ -26,7 +28,7 @@ use http::{
 };
 use crate::proof::{ProofService, TxPayloadProvider, ProofServiceError, ReclaimProofService};
 
-const DEFAULT_BATCH_INTERVAL: Duration = Duration::from_secs(3);
+const DEFAULT_BATCH_INTERVAL: StdDuration = StdDuration::from_secs(3);
 
 #[derive(Clone)]
 pub struct Config {
@@ -49,7 +51,7 @@ pub struct Config {
     pub auth_token: Option<String>,
 
     /// The interval at which to post batches of transactions.
-    pub batch_interval: Duration,
+    pub batch_interval: StdDuration,
 }
 
 impl Default for Config {
@@ -222,7 +224,7 @@ impl Node {
 
     pub async fn start_server(self: Arc<Self>) -> Result<()> {
         let cors = CorsLayer::new()
-            .allow_origin(Any) 
+            .allow_origin(Any)
             .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
             .allow_headers(vec![
                 HeaderName::from_static("content-type"),
@@ -285,6 +287,13 @@ struct SignInWalletPayload {
     message: String,
 }
 
+#[derive(Debug, Serialize)]
+struct Claims {
+    sub: String,  // subject (address)
+    exp: i64,     // expiration time
+    iat: i64,     // issued at
+}
+
 #[derive(Serialize)]
 struct SignInWalletResponse {
     auth: bool,
@@ -314,12 +323,43 @@ fn verify_arbitrary(
     vk.verify_digest(digest, &signature).map_err(|_| Error)
 }
 
-async fn sign_in_wallet(Json(body): Json<SignInWalletPayload>) -> impl IntoResponse {    
+async fn sign_in_wallet(Json(body): Json<SignInWalletPayload>) -> impl IntoResponse {
     match verify_arbitrary(&body.signer, &body.public_key, &body.signature, &body.message.as_bytes()) {
-        Ok(result) => {
-            (AxumHttp::StatusCode::OK, AxumJson(SignInWalletResponse { auth: true })).into_response()
+        Ok(_) => {
+            let expiration = Utc::now()
+                .checked_add_signed(ChronoDuration::hours(24))
+                .expect("valid timestamp")
+                .timestamp();
+
+            let claims = Claims {
+                sub: body.signer.clone(),
+                exp: expiration,
+                iat: Utc::now().timestamp(),
+            };
+
+            let token = encode(
+                &Header::default(),
+                &claims,
+                &EncodingKey::from_secret("your-secret-key".as_bytes()) // move it to env variable
+            ).unwrap();
+
+            let auth_header = format!("Bearer {}", token);
+
+            let response = SignInWalletResponse {
+                auth: true,
+            };
+
+            (
+                AxumHttp::StatusCode::OK,
+                [(AxumHttp::header::AUTHORIZATION, auth_header)],
+                AxumJson(response)
+            ).into_response()
         },
-        Err(e) => (AxumHttp::StatusCode::UNAUTHORIZED, format!("{}", e)).into_response(),
+        Err(e) => (
+            AxumHttp::StatusCode::UNAUTHORIZED,
+            [(AxumHttp::header::WWW_AUTHENTICATE, "Bearer")],
+            format!("{}", e)
+        ).into_response(),
     }
 }
 

@@ -10,7 +10,7 @@ axum = "0.6.0"
 reqwest = { version = "0.12.9", features = ["json"] }
 dotenv = "0.15"
 
-#reclaim 
+#reclaim
 reclaim-rust-sdk = "0.1.0"
 
 # celestia stuff
@@ -53,3 +53,5 @@ chrono = "0.4.39"
 
 
 # quote = "1.0"
+
+jsonwebtoken = "9.2"
