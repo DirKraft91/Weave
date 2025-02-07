@@ -2,31 +2,13 @@ use anyhow::{Context, Result};
 use async_lock::Mutex;
 use celestia_rpc::{BlobClient, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob, TxConfig};
-use std::fmt::{ Error };
-use std::str::FromStr;
-use std::{sync::Arc};
+use std::sync::Arc;
 use std::time::Duration as StdDuration;
 use tokio::sync::Notify;
-use reclaim_rust_sdk::{ Proof as ReclaimProof };
-use axum::{
-    routing::{get, post},
-    response::{ IntoResponse, Json as AxumJson },
-    http as AxumHttp,
-    Json, Router,
-};
-use serde::{Deserialize, Serialize};
-use jsonwebtoken::{encode, EncodingKey, Header};
-use chrono::{Utc, Duration as ChronoDuration};
 
 use crate::tx::Batch;
-use crate::webserver::submit_tx;
 use crate::{state::State, tx::Transaction};
-use tower_http::cors::{CorsLayer, Any};
-use http::{
-    header::HeaderName,
-    method::Method
-};
-use crate::proof::{ProofService, IdentityProvider, ProofServiceError, ReclaimProofService};
+use crate::router::create_router;
 
 const DEFAULT_BATCH_INTERVAL: StdDuration = StdDuration::from_secs(3);
 
@@ -223,20 +205,7 @@ impl Node {
     }
 
     pub async fn start_server(self: Arc<Self>) -> Result<()> {
-        let cors = CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
-            .allow_headers(vec![
-                HeaderName::from_static("content-type"),
-                HeaderName::from_static("authorization"),
-            ]);
-
-        let app = Router::new()
-            .route("/submit_tx", post(submit_tx))
-            .route("/proof", post(apply_proof))
-            .route("/auth", post(sign_in_wallet))
-            .layer(cors)
-            .with_state(self.clone());
+        let app = create_router(self.clone());
 
         let listen_addr = self.cfg.listen_addr.clone();
         info!("webserver listening on {}", listen_addr);
@@ -244,7 +213,6 @@ impl Node {
             .serve(app.into_make_service())
             .await
             .context("Failed to start server")
-
     }
 
     pub async fn start(self: Arc<Self>) -> Result<()> {
@@ -274,119 +242,3 @@ impl Node {
         Ok(())
     }
 }
-
-
-use ecdsa::signature::DigestVerifier;
-use k256::sha2::{Digest, Sha256};
-
-#[derive(Serialize, Deserialize)]
-struct SignInWalletPayload {
-    public_key: String,
-    signature: String,
-    signer: String,
-    message: String,
-}
-
-#[derive(Debug, Serialize)]
-struct Claims {
-    sub: String,  // subject (address)
-    exp: i64,     // expiration time
-    iat: i64,     // issued at
-}
-
-#[derive(Serialize)]
-struct SignInWalletResponse {
-    auth: bool,
-}
-
-fn generate_amino_transaction_string(signer: &str, data: &str) -> String {
-    format!("{{\"account_number\":\"0\",\"chain_id\":\"\",\"fee\":{{\"amount\":[],\"gas\":\"0\"}},\"memo\":\"\",\"msgs\":[{{\"type\":\"sign/MsgSignData\",\"value\":{{\"data\":\"{}\",\"signer\":\"{}\"}}}}],\"sequence\":\"0\"}}", data, signer)
-}
-
-fn verify_arbitrary(
-    account_addr: &str,
-    public_key: &str,
-    signature: &str,
-    data: &[u8],
-) -> Result<(), Error> {
-    let rpc_signature_to_compare = hex::encode(base64::decode(&signature).unwrap());
-    let signature: k256::ecdsa::Signature =
-        ecdsa::Signature::from_str(&rpc_signature_to_compare).unwrap();
-    let digest = Sha256::new_with_prefix(generate_amino_transaction_string(
-        account_addr,
-        &base64::encode(data),
-    ));
-    let pk = tendermint::PublicKey::from_raw_secp256k1(base64::decode(public_key).unwrap().as_slice())
-        .unwrap();
-    let vk = pk.secp256k1().unwrap();
-
-    vk.verify_digest(digest, &signature).map_err(|_| Error)
-}
-
-async fn sign_in_wallet(Json(body): Json<SignInWalletPayload>) -> impl IntoResponse {
-    match verify_arbitrary(&body.signer, &body.public_key, &body.signature, &body.message.as_bytes()) {
-        Ok(_) => {
-            let expiration = Utc::now()
-                .checked_add_signed(ChronoDuration::hours(24))
-                .expect("valid timestamp")
-                .timestamp();
-
-            let claims = Claims {
-                sub: body.signer.clone(),
-                exp: expiration,
-                iat: Utc::now().timestamp(),
-            };
-
-            let token = encode(
-                &Header::default(),
-                &claims,
-                &EncodingKey::from_secret("your-secret-key".as_bytes()) // move it to env variable
-            ).unwrap();
-
-            let auth_header = format!("Bearer {}", token);
-
-            let response = SignInWalletResponse {
-                auth: true,
-            };
-
-            (
-                AxumHttp::StatusCode::OK,
-                [(AxumHttp::header::AUTHORIZATION, auth_header)],
-                AxumJson(response)
-            ).into_response()
-        },
-        Err(e) => (
-            AxumHttp::StatusCode::UNAUTHORIZED,
-            [(AxumHttp::header::WWW_AUTHENTICATE, "Bearer")],
-            format!("{}", e)
-        ).into_response(),
-    }
-}
-
-
-#[derive(Deserialize, Serialize)]
-struct ProofApplyPayload {
-    proof: ReclaimProof,
-    provider: String,
-}
-
-#[derive(Serialize)]
-struct ProofApplyResponse {
-    success: bool,
-}
-
-async fn apply_proof(Json(payload): Json<ProofApplyPayload>) -> impl IntoResponse {
-    match ProofService::apply_proof(&ReclaimProofService {
-        data: payload.proof,
-        provider: IdentityProvider::from_str(&payload.provider).unwrap(),
-    }).await {
-        Ok(()) => (AxumHttp::StatusCode::OK, AxumJson(ProofApplyResponse { success: true })).into_response(),
-        Err(e) => {
-            match e {
-                ProofServiceError::ReclaimProofNotVerifiedError(e) => (AxumHttp::StatusCode::BAD_REQUEST, format!("{}", e)).into_response(),
-                _ => (AxumHttp::StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", e)).into_response(),
-            }
-        },
-    }
-}
-

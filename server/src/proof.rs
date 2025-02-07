@@ -4,6 +4,12 @@ use std::string::ToString;
 use serde_json::Value;
 use chrono::Utc;
 use thiserror::Error;
+use axum::{
+    response::{ IntoResponse, Json as AxumJson },
+    http as AxumHttp,
+    Json,
+};
+use serde::{Deserialize, Serialize};
 
 pub enum IdentityProvider {
     X,
@@ -37,8 +43,6 @@ impl ToString for IdentityProvider {
     }
 }
 
-
-
 #[derive(Debug, Error)]
 pub enum ProofServiceError {
     #[error("Reclaim proof could not be verified: {0}")]
@@ -49,7 +53,7 @@ pub enum ProofServiceError {
 
     #[error("email not found in context")]
     EmailNotFound,
-    
+
     #[error("screen_name not found in context")]
     ScreennameNotFound,
 
@@ -207,6 +211,32 @@ impl ProofService for ProofServiceProvider {
         match self {
             ProofServiceProvider::Reclaim(state) => state.apply_proof().await,
         }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ProofApplyPayload {
+    pub proof: ReclaimProof,
+    pub provider: String,
+}
+
+#[derive(Serialize)]
+pub struct ProofApplyResponse {
+    pub success: bool,
+}
+
+pub async fn apply_proof(Json(payload): Json<ProofApplyPayload>) -> impl IntoResponse {
+    match ProofService::apply_proof(&ReclaimProofService {
+        data: payload.proof,
+        provider: IdentityProvider::from_str(&payload.provider).unwrap(),
+    }).await {
+        Ok(()) => (AxumHttp::StatusCode::OK, AxumJson(ProofApplyResponse { success: true })).into_response(),
+        Err(e) => {
+            match e {
+                ProofServiceError::ReclaimProofNotVerifiedError(e) => (AxumHttp::StatusCode::BAD_REQUEST, format!("{}", e)).into_response(),
+                _ => (AxumHttp::StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", e)).into_response(),
+            }
+        },
     }
 }
 

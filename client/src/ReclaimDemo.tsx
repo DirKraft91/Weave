@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import QRCode from 'react-qr-code';
 import { Proof, ReclaimProofRequest } from '@reclaimprotocol/js-sdk';
+import { useState } from 'react';
+import QRCode from 'react-qr-code';
 
 const proofX: Proof = {
   identifier: '0x88d1307dd790649dd5aabc6c28a97f959e78292a0055707210e79206e59cfdb6',
@@ -109,11 +109,29 @@ export function ReclaimDemo() {
 
   const validateProof = async (proofs: Proof | Proof[]) => {
     try {
+      const token = localStorage.getItem('jwt_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
       const response = await fetch('http://localhost:8080/proof', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        },
         body: JSON.stringify({ proof: proofs, provider: 'linkedin' }),
       });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.error('Authentication token expired or invalid');
+          localStorage.removeItem('jwt_token'); // Clear invalid token
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const result = await response.json();
       console.log('Proof registered successfully:', result);
     } catch (error) {
