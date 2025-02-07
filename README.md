@@ -1,6 +1,6 @@
 # Project Name 
 
-X accounts on Prism
+Weave - Social accounts on Prism
 
 ## Overview  
 
