@@ -7,12 +7,16 @@ use std::str::FromStr;
 use std::{sync::Arc};
 use std::time::Duration as StdDuration;
 use tokio::sync::Notify;
-use reclaim_rust_sdk::{ Proof as ReclaimProof };
+use reclaim_rust_sdk::{ Proof as ReclaimProof, verify_proof };
+// use serde_json::json;
+use dotenv::dotenv;
+use std::env;
 use axum::{
     routing::{get, post},
     response::{ IntoResponse, Json as AxumJson },
-    http as AxumHttp,
+    http::StatusCode,
     Json, Router,
+    http as AxumHttp,
 };
 use serde::{Deserialize, Serialize};
 use jsonwebtoken::{encode, EncodingKey, Header};
@@ -131,6 +135,7 @@ impl Node {
             .collect();
 
         let mut state = self.state.lock().await;
+        
         for tx in txs {
             if let Err(e) = state.process_tx(tx) {
                 error!("processing tx: {}", e);
@@ -387,6 +392,30 @@ async fn apply_proof(Json(payload): Json<ProofApplyPayload>) -> impl IntoRespons
                 _ => (AxumHttp::StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", e)).into_response(),
             }
         },
+
     }
 }
+
+async fn root() -> &'static str {
+    "Hello, World!"
+}
+
+
+// async fn validate_proof(Json(payload): Json<ValidateProofPayload>) -> impl IntoResponse {
+//     let proof: reclaim_rust_sdk::Proof = match serde_json::from_value(payload.proof) {
+//       Ok(p) => p,
+//         Err(_) => return AxumHttp::StatusCode::BAD_REQUEST.into_response(),
+//     };
+
+//    match verify_proof(&proof).await {
+//     Ok(is_valid) => {
+//         if is_valid {
+//                 (AxumHttp::StatusCode::OK, AxumJson(ValidationResponse { is_valid })).into_response()
+//         } else {
+//                 AxumHttp::StatusCode::UNPROCESSABLE_ENTITY.into_response()
+//         }
+//     }
+//         Err(_) => AxumHttp::StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+//   }
+// }
 

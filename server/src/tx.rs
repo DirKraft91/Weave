@@ -9,12 +9,12 @@ pub const SIGNATURE_VERIFICATION_ENABLED: bool = false;
 /// Represents the full set of transaction types supported by the system.
 #[derive(Subcommand, Clone, Serialize, Deserialize, Debug)]
 pub enum TransactionType {
-    SendMessage { msg: String, user: String },
+    AddAccount { account_number: String, username: String },
+    DeleteAccount { user_id: u64 },
 }
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Transaction {
     /// Signature of bincode::serialize(&(tx_type, nonce))
-    /// For toy rollups or experimentation, use [`Signature::Placeholder`]
     pub signature: Signature,
     /// Account key of user.
     pub vk: VerifyingKey,
@@ -27,11 +27,13 @@ pub struct Transaction {
 }
 impl Transaction {
     pub fn verify(&self) -> Result<()> {
+        println!("verify info hello");
         if SIGNATURE_VERIFICATION_ENABLED {
             self.vk.verify_signature(&self.signature_msg()?, &self.signature)?;
         }
-        match &self.tx_type {
-            TransactionType::SendMessage { msg, user } => Ok(()),
+        match self.clone().tx_type {
+            TransactionType::AddAccount { .. } => Ok(()),
+            TransactionType::DeleteAccount { .. } => Ok(()),
         }
     }
     pub fn sign(&mut self, key: &SigningKey) -> Result<()> {
