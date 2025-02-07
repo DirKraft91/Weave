@@ -12,6 +12,7 @@ mod state;
 mod tx;
 mod webserver;
 mod proof;
+mod services;
 use node::{Config, Node};
 
 #[macro_use]

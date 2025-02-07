@@ -27,6 +27,7 @@ use http::{
     method::Method
 };
 use crate::proof::{ProofService, IdentityProvider, ProofServiceError, ReclaimProofService};
+use crate::services::auth::auth;
 
 const DEFAULT_BATCH_INTERVAL: StdDuration = StdDuration::from_secs(3);
 
@@ -234,7 +235,7 @@ impl Node {
         let app = Router::new()
             .route("/submit_tx", post(submit_tx))
             .route("/proof", post(apply_proof))
-            .route("/auth", post(sign_in_wallet))
+            .route("/auth", post(auth))
             .layer(cors)
             .with_state(self.clone());
 
@@ -274,95 +275,6 @@ impl Node {
         Ok(())
     }
 }
-
-
-use ecdsa::signature::DigestVerifier;
-use k256::sha2::{Digest, Sha256};
-
-#[derive(Serialize, Deserialize)]
-struct SignInWalletPayload {
-    public_key: String,
-    signature: String,
-    signer: String,
-    message: String,
-}
-
-#[derive(Debug, Serialize)]
-struct Claims {
-    sub: String,  // subject (address)
-    exp: i64,     // expiration time
-    iat: i64,     // issued at
-}
-
-#[derive(Serialize)]
-struct SignInWalletResponse {
-    auth: bool,
-}
-
-fn generate_amino_transaction_string(signer: &str, data: &str) -> String {
-    format!("{{\"account_number\":\"0\",\"chain_id\":\"\",\"fee\":{{\"amount\":[],\"gas\":\"0\"}},\"memo\":\"\",\"msgs\":[{{\"type\":\"sign/MsgSignData\",\"value\":{{\"data\":\"{}\",\"signer\":\"{}\"}}}}],\"sequence\":\"0\"}}", data, signer)
-}
-
-fn verify_arbitrary(
-    account_addr: &str,
-    public_key: &str,
-    signature: &str,
-    data: &[u8],
-) -> Result<(), Error> {
-    let rpc_signature_to_compare = hex::encode(base64::decode(&signature).unwrap());
-    let signature: k256::ecdsa::Signature =
-        ecdsa::Signature::from_str(&rpc_signature_to_compare).unwrap();
-    let digest = Sha256::new_with_prefix(generate_amino_transaction_string(
-        account_addr,
-        &base64::encode(data),
-    ));
-    let pk = tendermint::PublicKey::from_raw_secp256k1(base64::decode(public_key).unwrap().as_slice())
-        .unwrap();
-    let vk = pk.secp256k1().unwrap();
-
-    vk.verify_digest(digest, &signature).map_err(|_| Error)
-}
-
-async fn sign_in_wallet(Json(body): Json<SignInWalletPayload>) -> impl IntoResponse {
-    match verify_arbitrary(&body.signer, &body.public_key, &body.signature, &body.message.as_bytes()) {
-        Ok(_) => {
-            let expiration = Utc::now()
-                .checked_add_signed(ChronoDuration::hours(24))
-                .expect("valid timestamp")
-                .timestamp();
-
-            let claims = Claims {
-                sub: body.signer.clone(),
-                exp: expiration,
-                iat: Utc::now().timestamp(),
-            };
-
-            let token = encode(
-                &Header::default(),
-                &claims,
-                &EncodingKey::from_secret("your-secret-key".as_bytes()) // move it to env variable
-            ).unwrap();
-
-            let auth_header = format!("Bearer {}", token);
-
-            let response = SignInWalletResponse {
-                auth: true,
-            };
-
-            (
-                AxumHttp::StatusCode::OK,
-                [(AxumHttp::header::AUTHORIZATION, auth_header)],
-                AxumJson(response)
-            ).into_response()
-        },
-        Err(e) => (
-            AxumHttp::StatusCode::UNAUTHORIZED,
-            [(AxumHttp::header::WWW_AUTHENTICATE, "Bearer")],
-            format!("{}", e)
-        ).into_response(),
-    }
-}
-
 
 #[derive(Deserialize, Serialize)]
 struct ProofApplyPayload {
