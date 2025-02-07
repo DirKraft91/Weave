@@ -1,16 +1,19 @@
 use axum::{
     response::IntoResponse,
-    http::{self as AxumHttp, StatusCode},
+    http::{self as AxumHttp, StatusCode, header, Request},
+    middleware::Next,
+    response::Response,
     Json,
 };
 use chrono::{Duration as ChronoDuration, Utc};
 use ecdsa::signature::DigestVerifier;
-use jsonwebtoken::{encode, EncodingKey, Header};
+use jsonwebtoken::{encode, EncodingKey, Header, decode, DecodingKey, Validation};
 use k256::sha2::{Digest, Sha256};
 use serde::{Deserialize, Serialize};
 use std::fmt::Error;
 use std::str::FromStr;
 use tendermint::PublicKey;
+use std::env;
 
 #[derive(Serialize, Deserialize)]
 pub struct SignInWalletPayload {
@@ -20,11 +23,11 @@ pub struct SignInWalletPayload {
     pub message: String,
 }
 
-#[derive(Debug, Serialize)]
-struct Claims {
-    sub: String,  // subject (address)
-    exp: i64,     // expiration time
-    iat: i64,     // issued at
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: String,  // subject (address)
+    pub exp: i64,     // expiration time
+    pub iat: i64,     // issued at
 }
 
 #[derive(Serialize)]
@@ -61,7 +64,9 @@ impl AuthService {
                 let token = encode(
                     &Header::default(),
                     &claims,
-                    &EncodingKey::from_secret("your-secret-key".as_bytes()), // TODO: move to env variable
+                    &EncodingKey::from_secret(
+                        env::var("JWT_SECRET_KEY").unwrap().as_bytes()
+                    ),
                 )
                 .unwrap();
 
@@ -112,5 +117,35 @@ impl AuthService {
             \"signer\":\"{}\"}}}}],\"sequence\":\"0\"}}",
             data, signer
         )
+    }
+}
+
+pub async fn auth_middleware<B>(
+    request: Request<B>,
+    next: Next<B>,
+) -> Result<Response, StatusCode> {
+    let auth_header = request
+        .headers()
+        .get(header::AUTHORIZATION)
+        .and_then(|header| header.to_str().ok());
+
+    match auth_header {
+        Some(auth_str) if auth_str.starts_with("Bearer ") => {
+            let token = &auth_str["Bearer ".len()..];
+
+            match decode::<Claims>(
+                token,
+                &DecodingKey::from_secret(
+                    env::var("JWT_SECRET_KEY").unwrap().as_bytes()
+                ),
+                &Validation::default(),
+            ) {
+                Ok(_claims) => {
+                    Ok(next.run(request).await)
+                }
+                Err(_) => Err(StatusCode::UNAUTHORIZED),
+            }
+        }
+        _ => Err(StatusCode::UNAUTHORIZED),
     }
 }
