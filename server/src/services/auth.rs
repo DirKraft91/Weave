@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Error;
 use std::str::FromStr;
 use tendermint::PublicKey;
-use std::env;
 
 #[derive(Serialize, Deserialize)]
 pub struct SignInWalletPayload {
@@ -65,7 +64,7 @@ impl AuthService {
                     &Header::default(),
                     &claims,
                     &EncodingKey::from_secret(
-                        env::var("JWT_SECRET_KEY").unwrap().as_bytes()
+                       "JWT_SECRET_KEY".as_bytes()
                     ),
                 )
                 .unwrap();
@@ -136,7 +135,7 @@ pub async fn auth_middleware<B>(
             match decode::<Claims>(
                 token,
                 &DecodingKey::from_secret(
-                    env::var("JWT_SECRET_KEY").unwrap().as_bytes()
+                    "JWT_SECRET_KEY".as_bytes()
                 ),
                 &Validation::default(),
             ) {

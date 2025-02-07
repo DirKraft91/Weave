@@ -1,6 +1,6 @@
-import { FC } from 'react';
-import { useWalletClient } from '@cosmos-kit/react';
 import { useChainStore, useWalletStore } from '@/contexts';
+import { useWalletClient } from '@cosmos-kit/react';
+import { FC } from 'react';
 
 export const Auth: FC = () => {
   const { selectedWallet } = useWalletStore();
@@ -27,8 +27,7 @@ export const Auth: FC = () => {
 
       const signResult = await client?.signArbitrary(selectedChain, account.address, message);
 
-      // Отправка на бэкенд
-      await fetch('http://localhost:8080/auth', {
+      const response = await fetch('http://localhost:8080/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -38,8 +37,35 @@ export const Auth: FC = () => {
           message,
         }),
       });
+
+      // Add debug logging
+      console.log('Request payload:', {
+        signer: account.address,
+        public_key: signResult?.pub_key.value,
+        signature: signResult?.signature,
+        message,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Get JWT token from Authorization header
+      const token = response.headers.get('authorization');
+      if (token) {
+        // Store token in localStorage
+        localStorage.setItem('jwt_token', token);
+        console.log('Authentication successful');
+      } else {
+        throw new Error('No token received');
+      }
+
+      // Log response for debugging
+      const responseData = await response.json();
+      console.log('Auth response:', responseData);
+
     } catch (error) {
-      console.error('Ошибка подписи сообщения:', error);
+      console.error('Error during authentication:', error);
     }
   };
 
