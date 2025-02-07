@@ -14,6 +14,7 @@ mod webserver;
 mod proof;
 mod services;
 use node::{Config, Node};
+mod router;
 
 #[macro_use]
 extern crate log;

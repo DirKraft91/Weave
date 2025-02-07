@@ -2,32 +2,13 @@ use anyhow::{Context, Result};
 use async_lock::Mutex;
 use celestia_rpc::{BlobClient, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob, TxConfig};
-use std::fmt::{ Error };
-use std::str::FromStr;
-use std::{sync::Arc};
+use std::sync::Arc;
 use std::time::Duration as StdDuration;
 use tokio::sync::Notify;
-use reclaim_rust_sdk::{ Proof as ReclaimProof };
-use axum::{
-    routing::{get, post},
-    response::{ IntoResponse, Json as AxumJson },
-    http as AxumHttp,
-    Json, Router,
-};
-use serde::{Deserialize, Serialize};
-use jsonwebtoken::{encode, EncodingKey, Header};
-use chrono::{Utc, Duration as ChronoDuration};
 
 use crate::tx::Batch;
-use crate::webserver::submit_tx;
 use crate::{state::State, tx::Transaction};
-use tower_http::cors::{CorsLayer, Any};
-use http::{
-    header::HeaderName,
-    method::Method
-};
-use crate::proof::{ProofService, IdentityProvider, ProofServiceError, ReclaimProofService};
-use crate::services::auth::auth;
+use crate::router::create_router;
 
 const DEFAULT_BATCH_INTERVAL: StdDuration = StdDuration::from_secs(3);
 
@@ -224,20 +205,7 @@ impl Node {
     }
 
     pub async fn start_server(self: Arc<Self>) -> Result<()> {
-        let cors = CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
-            .allow_headers(vec![
-                HeaderName::from_static("content-type"),
-                HeaderName::from_static("authorization"),
-            ]);
-
-        let app = Router::new()
-            .route("/submit_tx", post(submit_tx))
-            .route("/proof", post(apply_proof))
-            .route("/auth", post(auth))
-            .layer(cors)
-            .with_state(self.clone());
+        let app = create_router(self.clone());
 
         let listen_addr = self.cfg.listen_addr.clone();
         info!("webserver listening on {}", listen_addr);
@@ -245,7 +213,6 @@ impl Node {
             .serve(app.into_make_service())
             .await
             .context("Failed to start server")
-
     }
 
     pub async fn start(self: Arc<Self>) -> Result<()> {
@@ -275,30 +242,3 @@ impl Node {
         Ok(())
     }
 }
-
-#[derive(Deserialize, Serialize)]
-struct ProofApplyPayload {
-    proof: ReclaimProof,
-    provider: String,
-}
-
-#[derive(Serialize)]
-struct ProofApplyResponse {
-    success: bool,
-}
-
-async fn apply_proof(Json(payload): Json<ProofApplyPayload>) -> impl IntoResponse {
-    match ProofService::apply_proof(&ReclaimProofService {
-        data: payload.proof,
-        provider: IdentityProvider::from_str(&payload.provider).unwrap(),
-    }).await {
-        Ok(()) => (AxumHttp::StatusCode::OK, AxumJson(ProofApplyResponse { success: true })).into_response(),
-        Err(e) => {
-            match e {
-                ProofServiceError::ReclaimProofNotVerifiedError(e) => (AxumHttp::StatusCode::BAD_REQUEST, format!("{}", e)).into_response(),
-                _ => (AxumHttp::StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", e)).into_response(),
-            }
-        },
-    }
-}
-
