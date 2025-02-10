@@ -15,17 +15,20 @@ use prism_prover::{webserver::WebServerConfig, Config, Prover};
 
 use crate::router::create_router;
 
-pub static SERVICE_ID: &str = "test_service";
+pub static SERVICE_ID: &str = "weave_service";
 
 
-async fn start_api_server() -> anyhow::Result<()> {
+async fn start_api_server() {
     let app = create_router();
     let listen_addr = "0.0.0.0:8080".to_string();
     info!("webserver listening on {}", listen_addr);
-    axum::Server::bind(&listen_addr.parse().unwrap())
+    println!("webserver listening on {}", listen_addr);
+    if let Err(e) = axum::Server::bind(&listen_addr.parse().unwrap())
         .serve(app.into_make_service())
         .await
-        .context("Failed to start server")
+        .context("Failed to start server") {
+            log::error!("Server error: {}", e);
+    }
 }
 
 #[tokio::main]
@@ -36,6 +39,8 @@ async fn main() -> Result<()> {
         );
     pretty_env_logger::init();
 
+    let api_server_handle = spawn(start_api_server());
+
     let db = InMemoryDatabase::new();
     let (da_layer, _, _) = InMemoryDataAvailabilityLayer::new(5);
 
@@ -43,6 +48,7 @@ async fn main() -> Result<()> {
 
     let sk = SigningKey::Ed25519(Box::new(keystore_sk.clone()));
 
+    println!("starting prover");
     let cfg = Config {
         prover: true,
         batcher: true,
@@ -77,9 +83,10 @@ async fn main() -> Result<()> {
         _ = runner_handle => {
             println!("Prover runner task completed");
         }
+        _ = api_server_handle => {
+            println!("API server task completed");
+        }
     }
-
-    start_api_server().await?;
 
     Ok(())
 }
