@@ -8,13 +8,10 @@ use http::{
     header::HeaderName,
     method::Method
 };
-use std::sync::Arc;
-use crate::node::Node;
-use crate::webserver::submit_tx;
 use crate::proof::apply_proof;
 use crate::services::auth::{auth, auth_middleware};
 
-pub fn create_router(node: Arc<Node>) -> Router {
+pub fn create_router() -> Router {
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
@@ -29,7 +26,6 @@ pub fn create_router(node: Arc<Node>) -> Router {
 
     // Protected routes that require authentication
     let protected_routes = Router::new()
-        .route("/submit_tx", post(submit_tx))
         .route("/proof", post(apply_proof))
         .layer(middleware::from_fn(auth_middleware));
 
@@ -38,5 +34,4 @@ pub fn create_router(node: Arc<Node>) -> Router {
         .merge(public_routes)
         .merge(protected_routes)
         .layer(cors)
-        .with_state(node)
 }
