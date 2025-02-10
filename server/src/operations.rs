@@ -15,7 +15,7 @@ use anyhow::{anyhow, Result};
 
 use crate::SERVICE_ID;
 
-async fn register_service(prover: Arc<Prover>) -> Result<()> {
+pub async fn register_service(prover: Arc<Prover>) -> Result<()> {
     // First, we make sure the service is not already registered.
     if let Found(_, _) = prover.get_account(&SERVICE_ID.to_string()).await? {
         debug!("Service already registered.");

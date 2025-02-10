@@ -12,7 +12,7 @@ use prism_storage::inmemory::InMemoryDatabase;
 use std::sync::Arc;
 use tokio::spawn;
 use prism_prover::{webserver::WebServerConfig, Config, Prover};
-
+use crate::operations::register_service;
 use crate::router::create_router;
 
 pub static SERVICE_ID: &str = "weave_service";
@@ -38,17 +38,11 @@ async fn main() -> Result<()> {
             "DEBUG,ctclient::internal=off,reqwest=off,hyper=off,tracing=off,sp1_stark=info,jmt=off,p3_dft=off,p3_fri=off,sp1_core_executor=info,sp1_recursion_program=info,p3_merkle_tree=off,sp1_recursion_compiler=off,sp1_core_machine=off",
         );
     pretty_env_logger::init();
-
     let api_server_handle = spawn(start_api_server());
-
     let db = InMemoryDatabase::new();
     let (da_layer, _, _) = InMemoryDataAvailabilityLayer::new(5);
-
     let keystore_sk = KeyChain.get_or_create_signing_key(SERVICE_ID)?;
-
     let sk = SigningKey::Ed25519(Box::new(keystore_sk.clone()));
-
-    println!("starting prover");
     let cfg = Config {
         prover: true,
         batcher: true,
@@ -70,6 +64,8 @@ async fn main() -> Result<()> {
         )
         .unwrap(),
     );
+
+    register_service(prover.clone()).await?;
 
     let runner = prover.clone();
     let runner_handle = spawn(async move {
