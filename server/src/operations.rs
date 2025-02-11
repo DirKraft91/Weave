@@ -122,7 +122,7 @@ async fn add_data(
     Err(anyhow!("Account {} not found", &user_id))
 }
 
-async fn create_account(user_id: String, prover: Arc<Prover>) -> Result<Account> {
+pub async fn create_account(user_id: String, prover: Arc<Prover>) -> Result<Account> {
     // First, we make sure the account is not already registered.
     if let Found(account, _) = prover.get_account(&user_id).await? {
         debug!("Account {} exists already", &user_id);
@@ -139,7 +139,7 @@ async fn create_account(user_id: String, prover: Arc<Prover>) -> Result<Account>
     // We retrieve/create the user's keypair to create the account.
     // Note: Obviously, in the real world, the keypair would be handled client side.
     let user_keystore = KeyChain
-        .get_signing_key(&format!("{}/{}", user_id, SERVICE_ID))
+        .get_or_create_signing_key(&format!("{}/{}", user_id, SERVICE_ID))
         .map_err(|e| anyhow!("Error getting key from store: {}", e))?;
     let user_sk = SigningKey::Ed25519(Box::new(user_keystore));
     let user_vk: VerifyingKey = user_sk.verifying_key();

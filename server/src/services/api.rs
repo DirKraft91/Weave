@@ -50,7 +50,8 @@ impl ApiService {
     
         // Public routes that don't require authentication
         let public_routes = Router::new()
-            .route("/auth", post(auth));
+            .route("/auth", post(auth))
+            .with_state(self.prover.clone());
     
         // Protected routes that require authentication
         let protected_routes = Router::new()
@@ -62,6 +63,5 @@ impl ApiService {
             .merge(public_routes)
             .merge(protected_routes)
             .layer(cors)
-            .with_state(self.prover.clone())
     }
 }

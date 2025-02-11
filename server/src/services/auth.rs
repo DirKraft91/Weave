@@ -4,15 +4,20 @@ use axum::{
     middleware::Next,
     response::Response,
     Json,
+    extract::State,
 };
 use chrono::{Duration as ChronoDuration, Utc};
 use ecdsa::signature::DigestVerifier;
 use jsonwebtoken::{encode, EncodingKey, Header, decode, DecodingKey, Validation};
 use k256::sha2::{Digest, Sha256};
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::fmt::Error;
 use std::str::FromStr;
 use tendermint::PublicKey;
+use crate::operations::create_account;
+use prism_prover::Prover;
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize)]
 pub struct SignInWalletPayload {
@@ -34,14 +39,17 @@ struct SignInWalletResponse {
     auth: bool,
 }
 
-pub async fn auth(Json(body): Json<SignInWalletPayload>) -> impl IntoResponse {
-    AuthService::sign_in_wallet(body).await
+pub async fn auth(
+    State(prover): State<Arc<Prover>>,
+    Json(body): Json<SignInWalletPayload>
+) -> impl IntoResponse {
+    AuthService::sign_in_wallet(body, prover).await
 }
 
 pub struct AuthService;
 
 impl AuthService {
-    pub async fn sign_in_wallet(body: SignInWalletPayload) -> impl IntoResponse {
+    pub async fn sign_in_wallet(body: SignInWalletPayload, prover: Arc<Prover>) -> impl IntoResponse {
         match Self::verify_arbitrary(
             &body.signer,
             &body.public_key,
@@ -49,6 +57,14 @@ impl AuthService {
             &body.message.as_bytes(),
         ) {
             Ok(_) => {
+                match create_account(body.signer.clone(), prover.clone()).await {
+                    Ok(acc) => {
+                        println!("Account created: {:?}", acc);
+                        acc
+                    },
+                    Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(e.to_string())).into_response(),
+                };
+
                 let expiration = Utc::now()
                     .checked_add_signed(ChronoDuration::hours(24))
                     .expect("valid timestamp")
@@ -96,7 +112,7 @@ impl AuthService {
         data: &[u8],
     ) -> Result<(), Error> {
         let rpc_signature_to_compare = hex::encode(base64::decode(&signature).unwrap());
-        let signature: k256::ecdsa::Signature =
+        let signature =
             ecdsa::Signature::from_str(&rpc_signature_to_compare).unwrap();
         let digest = Sha256::new_with_prefix(Self::generate_amino_transaction_string(
             account_addr,
