@@ -6,11 +6,11 @@ use axum::{
     Json,
     extract::State,
 };
+use std::env;
 use chrono::{Duration as ChronoDuration, Utc};
 use ecdsa::signature::DigestVerifier;
 use jsonwebtoken::{encode, EncodingKey, Header, decode, DecodingKey, Validation};
 use k256::sha2::{Digest, Sha256};
-use log::debug;
 use serde::{Deserialize, Serialize};
 use std::fmt::Error;
 use std::str::FromStr;
@@ -76,11 +76,13 @@ impl AuthService {
                     iat: Utc::now().timestamp(),
                 };
 
+                let secret_key = std::env::var("JWT_SECRET_KEY").expect("JWT_SECRET_KEY must be set");
+
                 let token = encode(
                     &Header::default(),
                     &claims,
                     &EncodingKey::from_secret(
-                       "JWT_SECRET_KEY".as_bytes()
+                       secret_key.as_bytes()
                     ),
                 )
                 .unwrap();
@@ -144,15 +146,15 @@ pub async fn auth_middleware<B>(
         .get(header::AUTHORIZATION)
         .and_then(|header| header.to_str().ok());
 
+    let secret_key = std::env::var("JWT_SECRET_KEY").expect("JWT_SECRET_KEY must be set");
+
     match auth_header {
         Some(auth_str) if auth_str.starts_with("Bearer ") => {
             let token = &auth_str["Bearer ".len()..];
 
             match decode::<Claims>(
                 token,
-                &DecodingKey::from_secret(
-                    "JWT_SECRET_KEY".as_bytes()
-                ),
+                &DecodingKey::from_secret(secret_key.as_bytes()),
                 &Validation::default(),
             ) {
                 Ok(_claims) => {
