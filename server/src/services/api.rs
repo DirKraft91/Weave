@@ -15,7 +15,8 @@ use http::{
     method::Method
 };
 use crate::proof::apply_proof;
-use crate::services::auth::{auth, auth_middleware};
+use crate::services::auth::auth;
+use crate::middleware::auth::auth_middleware;
 
 pub struct ApiService {
     prover: Arc<Prover>,
@@ -47,17 +48,17 @@ impl ApiService {
                 HeaderName::from_static("content-type"),
                 HeaderName::from_static("authorization"),
             ]);
-    
+
         // Public routes that don't require authentication
         let public_routes = Router::new()
             .route("/auth", post(auth))
             .with_state(self.prover.clone());
-    
+
         // Protected routes that require authentication
         let protected_routes = Router::new()
             .route("/proof", post(apply_proof))
             .layer(middleware::from_fn(auth_middleware));
-    
+
         // Combine the routes
         Router::new()
             .merge(public_routes)

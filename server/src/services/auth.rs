@@ -1,8 +1,6 @@
 use axum::{
     response::IntoResponse,
-    http::{self as AxumHttp, StatusCode, header, Request},
-    middleware::Next,
-    response::Response,
+    http::{self as AxumHttp, StatusCode},
     Json,
     extract::State,
 };
@@ -40,7 +38,7 @@ struct SignInWalletResponse {
 }
 
 // JWT Service
-struct JwtService;
+pub struct JwtService;
 
 impl JwtService {
     fn create_token(signer: &str) -> Result<String, jsonwebtoken::errors::Error> {
@@ -64,7 +62,7 @@ impl JwtService {
         )
     }
 
-    fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+    pub fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
         let secret_key = std::env::var("JWT_SECRET_KEY").expect("JWT_SECRET_KEY must be set");
 
         decode::<Claims>(
@@ -165,31 +163,4 @@ pub async fn auth(
     Json(body): Json<SignInWalletPayload>
 ) -> impl IntoResponse {
     AuthService::sign_in_wallet(body, prover).await
-}
-
-pub async fn auth_middleware<B>(
-    request: Request<B>,
-    next: Next<B>,
-) -> Result<Response, StatusCode> {
-    let token = extract_token_from_header(&request)?;
-
-    match JwtService::verify_token(token) {
-        Ok(_claims) => Ok(next.run(request).await),
-        Err(_) => Err(StatusCode::UNAUTHORIZED),
-    }
-}
-
-// Helper Functions
-fn extract_token_from_header<B>(request: &Request<B>) -> Result<&str, StatusCode> {
-    let auth_header = request
-        .headers()
-        .get(header::AUTHORIZATION)
-        .and_then(|header| header.to_str().ok())
-        .ok_or(StatusCode::UNAUTHORIZED)?;
-
-    if !auth_header.starts_with("Bearer ") {
-        return Err(StatusCode::UNAUTHORIZED);
-    }
-
-    Ok(&auth_header["Bearer ".len()..])
 }

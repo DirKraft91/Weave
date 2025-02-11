@@ -1,6 +1,7 @@
 mod operations;
 mod proof;
 mod services;
+mod middleware;
 
 use anyhow::Result;
 use tokio::spawn;
