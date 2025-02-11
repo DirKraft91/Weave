@@ -6,7 +6,6 @@ use axum::{
     Json,
     extract::State,
 };
-use std::env;
 use chrono::{Duration as ChronoDuration, Utc};
 use ecdsa::signature::DigestVerifier;
 use jsonwebtoken::{encode, EncodingKey, Header, decode, DecodingKey, Validation};
@@ -19,6 +18,7 @@ use crate::operations::create_account;
 use prism_prover::Prover;
 use std::sync::Arc;
 
+// Types and DTOs
 #[derive(Serialize, Deserialize)]
 pub struct SignInWalletPayload {
     pub public_key: String,
@@ -39,95 +39,67 @@ struct SignInWalletResponse {
     auth: bool,
 }
 
-pub async fn auth(
-    State(prover): State<Arc<Prover>>,
-    Json(body): Json<SignInWalletPayload>
-) -> impl IntoResponse {
-    AuthService::sign_in_wallet(body, prover).await
-}
+// JWT Service
+struct JwtService;
 
-pub struct AuthService;
+impl JwtService {
+    fn create_token(signer: &str) -> Result<String, jsonwebtoken::errors::Error> {
+        let expiration = Utc::now()
+            .checked_add_signed(ChronoDuration::hours(24))
+            .expect("valid timestamp")
+            .timestamp();
 
-impl AuthService {
-    pub async fn sign_in_wallet(body: SignInWalletPayload, prover: Arc<Prover>) -> impl IntoResponse {
-        match Self::verify_arbitrary(
-            &body.signer,
-            &body.public_key,
-            &body.signature,
-            &body.message.as_bytes(),
-        ) {
-            Ok(_) => {
-                match create_account(body.signer.clone(), prover.clone()).await {
-                    Ok(acc) => {
-                        println!("Account created: {:?}", acc);
-                        acc
-                    },
-                    Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(e.to_string())).into_response(),
-                };
+        let claims = Claims {
+            sub: signer.to_string(),
+            exp: expiration,
+            iat: Utc::now().timestamp(),
+        };
 
-                let expiration = Utc::now()
-                    .checked_add_signed(ChronoDuration::hours(24))
-                    .expect("valid timestamp")
-                    .timestamp();
+        let secret_key = std::env::var("JWT_SECRET_KEY").expect("JWT_SECRET_KEY must be set");
 
-                let claims = Claims {
-                    sub: body.signer.clone(),
-                    exp: expiration,
-                    iat: Utc::now().timestamp(),
-                };
-
-                let secret_key = std::env::var("JWT_SECRET_KEY").expect("JWT_SECRET_KEY must be set");
-
-                let token = encode(
-                    &Header::default(),
-                    &claims,
-                    &EncodingKey::from_secret(
-                       secret_key.as_bytes()
-                    ),
-                )
-                .unwrap();
-
-                let auth_header = format!("Bearer {}", token);
-
-                let response = SignInWalletResponse { auth: true };
-
-                (
-                    StatusCode::OK,
-                    [(AxumHttp::header::AUTHORIZATION, auth_header)],
-                    Json(response),
-                )
-                    .into_response()
-            }
-            Err(e) => (
-                StatusCode::UNAUTHORIZED,
-                [(AxumHttp::header::WWW_AUTHENTICATE, "Bearer")],
-                format!("{}", e),
-            )
-                .into_response(),
-        }
+        encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(secret_key.as_bytes()),
+        )
     }
 
-    fn verify_arbitrary(
+    fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+        let secret_key = std::env::var("JWT_SECRET_KEY").expect("JWT_SECRET_KEY must be set");
+
+        decode::<Claims>(
+            token,
+            &DecodingKey::from_secret(secret_key.as_bytes()),
+            &Validation::default(),
+        ).map(|token_data| token_data.claims)
+    }
+}
+
+// Signature Verification Service
+struct SignatureService;
+
+impl SignatureService {
+    fn verify_signature(
         account_addr: &str,
         public_key: &str,
         signature: &str,
         data: &[u8],
     ) -> Result<(), Error> {
         let rpc_signature_to_compare = hex::encode(base64::decode(&signature).unwrap());
-        let signature =
-            ecdsa::Signature::from_str(&rpc_signature_to_compare).unwrap();
-        let digest = Sha256::new_with_prefix(Self::generate_amino_transaction_string(
-            account_addr,
-            &base64::encode(data),
-        ));
-        let pk = PublicKey::from_raw_secp256k1(base64::decode(public_key).unwrap().as_slice())
-            .unwrap();
+        let signature = ecdsa::Signature::from_str(&rpc_signature_to_compare).unwrap();
+
+        let message = Self::generate_amino_message(account_addr, &base64::encode(data));
+        let digest = Sha256::new_with_prefix(message);
+
+        let pk = PublicKey::from_raw_secp256k1(
+            base64::decode(public_key).unwrap().as_slice()
+        ).unwrap();
         let vk = pk.secp256k1().unwrap();
 
         vk.verify_digest(digest, &signature).map_err(|_| Error)
     }
 
-    fn generate_amino_transaction_string(signer: &str, data: &str) -> String {
+    fn generate_amino_message(signer: &str, data: &str) -> String {
         format!(
             "{{\"account_number\":\"0\",\"chain_id\":\"\",\"fee\":{{\"amount\":[],\"gas\":\"0\"}},\
             \"memo\":\"\",\"msgs\":[{{\"type\":\"sign/MsgSignData\",\"value\":{{\"data\":\"{}\",\
@@ -137,32 +109,87 @@ impl AuthService {
     }
 }
 
+// Auth Service
+pub struct AuthService;
+
+impl AuthService {
+    pub async fn sign_in_wallet(
+        body: SignInWalletPayload,
+        prover: Arc<Prover>
+    ) -> impl IntoResponse {
+        // Verify signature
+        if let Err(e) = SignatureService::verify_signature(
+            &body.signer,
+            &body.public_key,
+            &body.signature,
+            &body.message.as_bytes(),
+        ) {
+            return (
+                StatusCode::UNAUTHORIZED,
+                [(AxumHttp::header::WWW_AUTHENTICATE, "Bearer")],
+                format!("{}", e),
+            ).into_response();
+        }
+
+        // Create account
+        if let Err(e) = create_account(body.signer.clone(), prover).await {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(e.to_string())
+            ).into_response();
+        }
+
+        // Generate JWT token
+        match JwtService::create_token(&body.signer) {
+            Ok(token) => {
+                let auth_header = format!("Bearer {}", token);
+                let response = SignInWalletResponse { auth: true };
+
+                (
+                    StatusCode::OK,
+                    [(AxumHttp::header::AUTHORIZATION, auth_header)],
+                    Json(response),
+                ).into_response()
+            },
+            Err(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json("Failed to create token".to_string()),
+            ).into_response(),
+        }
+    }
+}
+
+// Handlers and Middleware
+pub async fn auth(
+    State(prover): State<Arc<Prover>>,
+    Json(body): Json<SignInWalletPayload>
+) -> impl IntoResponse {
+    AuthService::sign_in_wallet(body, prover).await
+}
+
 pub async fn auth_middleware<B>(
     request: Request<B>,
     next: Next<B>,
 ) -> Result<Response, StatusCode> {
+    let token = extract_token_from_header(&request)?;
+
+    match JwtService::verify_token(token) {
+        Ok(_claims) => Ok(next.run(request).await),
+        Err(_) => Err(StatusCode::UNAUTHORIZED),
+    }
+}
+
+// Helper Functions
+fn extract_token_from_header<B>(request: &Request<B>) -> Result<&str, StatusCode> {
     let auth_header = request
         .headers()
         .get(header::AUTHORIZATION)
-        .and_then(|header| header.to_str().ok());
+        .and_then(|header| header.to_str().ok())
+        .ok_or(StatusCode::UNAUTHORIZED)?;
 
-    let secret_key = std::env::var("JWT_SECRET_KEY").expect("JWT_SECRET_KEY must be set");
-
-    match auth_header {
-        Some(auth_str) if auth_str.starts_with("Bearer ") => {
-            let token = &auth_str["Bearer ".len()..];
-
-            match decode::<Claims>(
-                token,
-                &DecodingKey::from_secret(secret_key.as_bytes()),
-                &Validation::default(),
-            ) {
-                Ok(_claims) => {
-                    Ok(next.run(request).await)
-                }
-                Err(_) => Err(StatusCode::UNAUTHORIZED),
-            }
-        }
-        _ => Err(StatusCode::UNAUTHORIZED),
+    if !auth_header.starts_with("Bearer ") {
+        return Err(StatusCode::UNAUTHORIZED);
     }
+
+    Ok(&auth_header["Bearer ".len()..])
 }
