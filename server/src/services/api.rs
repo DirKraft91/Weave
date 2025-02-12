@@ -49,20 +49,17 @@ impl ApiService {
                 HeaderName::from_static("authorization"),
             ]);
 
-        // Public routes that don't require authentication
         let public_routes = Router::new()
-            .route("/auth", post(auth))
-            .with_state(self.prover.clone());
+            .route("/auth", post(auth));
 
-        // Protected routes that require authentication
         let protected_routes = Router::new()
             .route("/proof", post(apply_proof))
             .layer(middleware::from_fn(auth_middleware));
 
-        // Combine the routes
         Router::new()
             .merge(public_routes)
             .merge(protected_routes)
             .layer(cors)
+            .with_state(self.prover.clone())
     }
 }

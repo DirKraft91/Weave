@@ -5,28 +5,32 @@ use axum::{
 };
 use crate::services::auth::JwtService;
 
-pub async fn auth_middleware<B>(
-    request: Request<B>,
-    next: Next<B>,
-) -> Result<Response, StatusCode> {
-    let token = extract_token_from_header(&request)?;
-
-    match JwtService::verify_token(token) {
-        Ok(_claims) => Ok(next.run(request).await),
-        Err(_) => Err(StatusCode::UNAUTHORIZED),
-    }
+#[derive(Clone)]
+pub struct AuthUser {
+    pub user_id: String,  // from Claims.sub
 }
 
-fn extract_token_from_header<B>(request: &Request<B>) -> Result<&str, StatusCode> {
+pub async fn auth_middleware<B>(
+    mut request: Request<B>,
+    next: Next<B>,
+) -> Result<Response, StatusCode> {
     let auth_header = request
         .headers()
         .get(header::AUTHORIZATION)
-        .and_then(|header| header.to_str().ok())
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+        .and_then(|header| header.to_str().ok());
 
-    if !auth_header.starts_with("Bearer ") {
-        return Err(StatusCode::UNAUTHORIZED);
+    match auth_header {
+        Some(auth_str) => {
+            match JwtService::extract_token(auth_str) {
+                Ok(claims) => {
+                    request.extensions_mut().insert(AuthUser {
+                        user_id: claims.sub,
+                    });
+                    Ok(next.run(request).await)
+                }
+                Err(_) => Err(StatusCode::UNAUTHORIZED),
+            }
+        }
+        None => Err(StatusCode::UNAUTHORIZED),
     }
-
-    Ok(&auth_header["Bearer ".len()..])
 }

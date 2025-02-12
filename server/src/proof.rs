@@ -8,8 +8,12 @@ use axum::{
     response::{ IntoResponse, Json as AxumJson },
     http as AxumHttp,
     Json,
+    extract::{Extension, State},
 };
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use crate::{middleware::auth::AuthUser, operations};
+use prism_prover::Prover;
 
 pub enum IdentityProvider {
     X,
@@ -61,21 +65,23 @@ pub enum ProofServiceError {
     UsernameNotFound,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct GoogleProviderIdentityRecord {
     proof: ReclaimProof,
     email: String,
     created_at: i64,
     provider: String,
 }
-#[derive(Debug)]
+
+#[derive(Debug, Serialize)]
 struct XProviderIdentityRecord {
     proof: ReclaimProof,
     nickname: String,
     created_at: i64,
     provider: String,
 }
-#[derive(Debug)]
+
+#[derive(Debug, Serialize)]
 struct GithubProviderIdentityRecord {
     proof: ReclaimProof,
     username: String,
@@ -83,7 +89,7 @@ struct GithubProviderIdentityRecord {
     provider: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct LinkedinProviderIdentityRecord {
     proof: ReclaimProof,
     username: String,
@@ -91,7 +97,7 @@ struct LinkedinProviderIdentityRecord {
     provider: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 enum IdentityRecord {
     X(XProviderIdentityRecord),
     Google(GoogleProviderIdentityRecord),
@@ -103,9 +109,11 @@ pub trait ProofService {
     async fn apply_proof(&self) -> Result<(), ProofServiceError>;
 }
 
-pub struct ReclaimProofService {
-    pub(crate) data: ReclaimProof,
-    pub(crate) provider: IdentityProvider,
+struct ReclaimProofService {
+    data: ReclaimProof,
+    provider: IdentityProvider,
+    prover: Arc<Prover>,
+    auth_user: AuthUser,
 }
 
 impl ReclaimProofService {
@@ -198,6 +206,8 @@ impl ProofService for ReclaimProofService {
         self.validate().await?;
         let tx_payload: IdentityRecord = self.prepare_payload_to_apply()?;
 
+        // TODO add data to the account
+        
         println!("tx_payload: {:?}", tx_payload);
         Ok(())
     }
@@ -206,6 +216,7 @@ impl ProofService for ReclaimProofService {
 enum ProofServiceProvider {
     Reclaim(ReclaimProofService),
 }
+
 impl ProofService for ProofServiceProvider {
     async fn apply_proof(&self) -> Result<(), ProofServiceError> {
         match self {
@@ -216,20 +227,28 @@ impl ProofService for ProofServiceProvider {
 
 #[derive(Deserialize, Serialize)]
 pub struct ProofApplyPayload {
-    pub proof: ReclaimProof,
-    pub provider: String,
+    proof: ReclaimProof,
+    provider: String,
 }
 
 #[derive(Serialize)]
 pub struct ProofApplyResponse {
-    pub success: bool,
+    success: bool,
 }
 
-pub async fn apply_proof(Json(payload): Json<ProofApplyPayload>) -> impl IntoResponse {
-    match ProofService::apply_proof(&ReclaimProofService {
+pub async fn apply_proof(
+    State(prover): State<Arc<Prover>>,
+    Extension(auth_user): Extension<AuthUser>,
+    Json(payload): Json<ProofApplyPayload>,
+) -> impl IntoResponse {
+    let service = ProofServiceProvider::Reclaim(ReclaimProofService {
         data: payload.proof,
         provider: IdentityProvider::from_str(&payload.provider).unwrap(),
-    }).await {
+        prover: prover.clone(),
+        auth_user: auth_user,
+    });
+
+    match service.apply_proof().await {
         Ok(()) => (AxumHttp::StatusCode::OK, AxumJson(ProofApplyResponse { success: true })).into_response(),
         Err(e) => {
             match e {
@@ -239,4 +258,3 @@ pub async fn apply_proof(Json(payload): Json<ProofApplyPayload>) -> impl IntoRes
         },
     }
 }
-

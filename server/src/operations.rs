@@ -86,7 +86,7 @@ async fn add_key(
     Err(anyhow!("Account {} not found", &user_id))
 }
 
-async fn add_data(
+pub async fn add_data(
     user_id: String,
     prover: Arc<Prover>,
     signing_key: SigningKey,
