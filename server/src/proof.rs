@@ -1,3 +1,4 @@
+use log::debug;
 use reclaim_rust_sdk::{ Proof as ReclaimProof, ProofNotVerifiedError as ReclaimProofNotVerifiedError };
 use std::str::FromStr;
 use std::string::ToString;
@@ -12,8 +13,14 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use crate::{middleware::auth::AuthUser, operations};
+use crate::{middleware::auth::AuthUser, SERVICE_ID};
 use prism_prover::Prover;
+use prism_keys::SigningKey;
+use prism_common::{
+    account::Account, digest::Digest, operation::{Operation, SignatureBundle}
+};
+use keystore_rs::{KeyChain, KeyStore};
+use prism_tree::AccountResponse::Found;
 
 pub enum IdentityProvider {
     X,
@@ -63,6 +70,24 @@ pub enum ProofServiceError {
 
     #[error("username not found in context")]
     UsernameNotFound,
+
+    #[error("Key store error: {0}")]
+    KeyStoreError(String),
+
+    #[error("Serialization error: {0}")]
+    SerializationError(String),
+
+    #[error("Transaction error: {0}")]
+    TransactionError(String),
+
+    #[error("Account not found")]
+    AccountNotFound,
+}
+
+impl From<anyhow::Error> for ProofServiceError {
+    fn from(error: anyhow::Error) -> Self {
+        ProofServiceError::TransactionError(error.to_string())
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -106,7 +131,7 @@ enum IdentityRecord {
 }
 
 pub trait ProofService {
-    async fn apply_proof(&self) -> Result<(), ProofServiceError>;
+    async fn apply_proof(&self) -> Result<Account, ProofServiceError>;
 }
 
 struct ReclaimProofService {
@@ -202,14 +227,45 @@ impl ReclaimProofService {
 }
 
 impl ProofService for ReclaimProofService {
-    async fn apply_proof(&self) -> Result<(), ProofServiceError> {
+    async fn apply_proof(&self) -> Result<Account, ProofServiceError> {
         self.validate().await?;
-        let tx_payload: IdentityRecord = self.prepare_payload_to_apply()?;
 
-        // TODO add data to the account
-        
-        println!("tx_payload: {:?}", tx_payload);
-        Ok(())
+        debug!("ReclaimProofService::apply_proof: {}", self.auth_user.user_id);
+        if let Found(account, _) = self.prover.get_account(&self.auth_user.user_id).await
+            .map_err(|_| ProofServiceError::AccountNotFound)? {
+            
+            let tx_payload: IdentityRecord = self.prepare_payload_to_apply()?;
+            let json_string = serde_json::to_string(&tx_payload)
+                .map_err(|e| ProofServiceError::SerializationError(e.to_string()))?;
+            let data = json_string.as_bytes();
+            
+            let user_keystore = KeyChain
+                .get_signing_key(&format!("{}/{}", self.auth_user.user_id, SERVICE_ID))
+                .map_err(|e| ProofServiceError::KeyStoreError(e.to_string()))?;
+
+            let user_sk = SigningKey::Ed25519(Box::new(user_keystore));
+            let user_vk = user_sk.verifying_key();
+            let hash = Digest::hash(data);
+            let signature = user_sk.sign(&hash.to_bytes());
+
+            let signature_bundle = SignatureBundle { 
+                verifying_key: user_vk, 
+                signature: signature
+            };
+
+            let add_data_op = Operation::AddData { 
+                data: data.to_vec(), 
+                data_signature: signature_bundle
+            };
+
+            let mut account = account.clone();
+            let add_data_tx = account.prepare_transaction(self.auth_user.user_id.clone(), add_data_op, &user_sk)?;
+            self.prover.clone().validate_and_queue_update(add_data_tx.clone()).await?;
+            account.process_transaction(&add_data_tx)?;
+
+            return Ok(*account);
+        }
+        Err(ProofServiceError::AccountNotFound)
     }
 }
 
@@ -218,7 +274,7 @@ enum ProofServiceProvider {
 }
 
 impl ProofService for ProofServiceProvider {
-    async fn apply_proof(&self) -> Result<(), ProofServiceError> {
+    async fn apply_proof(&self) -> Result<Account, ProofServiceError> {
         match self {
             ProofServiceProvider::Reclaim(state) => state.apply_proof().await,
         }
@@ -241,6 +297,9 @@ pub async fn apply_proof(
     Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<ProofApplyPayload>,
 ) -> impl IntoResponse {
+    debug!("Applying proof for user: {}", auth_user.user_id);
+    debug!("Proof: {:?}", payload.proof);
+    debug!("Provider: {}", payload.provider);
     let service = ProofServiceProvider::Reclaim(ReclaimProofService {
         data: payload.proof,
         provider: IdentityProvider::from_str(&payload.provider).unwrap(),
@@ -249,7 +308,7 @@ pub async fn apply_proof(
     });
 
     match service.apply_proof().await {
-        Ok(()) => (AxumHttp::StatusCode::OK, AxumJson(ProofApplyResponse { success: true })).into_response(),
+        Ok(_) => (AxumHttp::StatusCode::OK, AxumJson(ProofApplyResponse { success: true })).into_response(),
         Err(e) => {
             match e {
                 ProofServiceError::ReclaimProofNotVerifiedError(e) => (AxumHttp::StatusCode::BAD_REQUEST, format!("{}", e)).into_response(),

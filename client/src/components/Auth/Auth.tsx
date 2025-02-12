@@ -50,20 +50,9 @@ export const Auth: FC = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Get JWT token from Authorization header
-      const token = response.headers.get('authorization');
-      if (token) {
-        // Store token in localStorage
-        localStorage.setItem('jwt_token', token);
-        console.log('Authentication successful');
-      } else {
-        throw new Error('No token received');
-      }
-
-      // Log response for debugging
       const responseData = await response.json();
+      localStorage.setItem('jwt_token', responseData.token);
       console.log('Auth response:', responseData);
-
     } catch (error) {
       console.error('Error during authentication:', error);
     }

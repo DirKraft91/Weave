@@ -1,5 +1,5 @@
 use axum::{
-    response::IntoResponse,
+    response::{ IntoResponse, Json as AxumJson },
     http::{self as AxumHttp, StatusCode},
     Json,
     extract::State,
@@ -94,7 +94,7 @@ pub struct Claims {
 
 #[derive(Serialize)]
 struct SignInWalletResponse {
-    auth: bool,
+    token: String,
 }
 
 // Types for auth result
@@ -230,13 +230,9 @@ pub async fn auth(
 ) -> impl IntoResponse {
     match AuthService::sign_in_wallet(prover, body).await {
         Ok(result) => {
-            let auth_header = format!("Bearer {}", result.token);
-            let response = SignInWalletResponse { auth: true };
-            
             (
                 StatusCode::OK,
-                [(AxumHttp::header::AUTHORIZATION, auth_header)],
-                Json(response),
+                AxumJson(SignInWalletResponse { token: result.token }),
             ).into_response()
         },
         Err(e) => e.into_response(),

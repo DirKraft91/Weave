@@ -152,7 +152,7 @@ pub async fn create_account(user_id: String, prover: Arc<Prover>) -> Result<Acco
         SERVICE_ID.as_bytes(),
         &user_vk.to_bytes(),
     ]);
-    let signature = service_sk.sign(&hash.to_bytes());
+    let signature: prism_keys::Signature = service_sk.sign(&hash.to_bytes());
 
     // Now that the service has authorized the account creation, we can
     // construct, prepare, and submit the transaction to create the account.
