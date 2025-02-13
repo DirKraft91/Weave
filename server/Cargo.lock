@@ -7005,38 +7005,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "server"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum 0.6.20",
- "base64 0.20.0",
- "chrono",
- "dotenv",
- "ecdsa 0.14.8",
- "hex",
- "http 0.2.12",
- "jsonwebtoken 9.3.0",
- "k256 0.11.6",
- "keystore-rs",
- "log",
- "pretty_env_logger",
- "prism-common",
- "prism-da",
- "prism-keys",
- "prism-prover",
- "prism-storage",
- "prism-tree",
- "reclaim-rust-sdk",
- "serde",
- "serde_json",
- "tendermint 0.28.0",
- "thiserror 2.0.11",
- "tokio",
- "tower-http 0.3.5",
-]
-
-[[package]]
 name = "sha-1"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8939,6 +8907,38 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+]
+
+[[package]]
+name = "weave-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum 0.6.20",
+ "base64 0.20.0",
+ "chrono",
+ "dotenv",
+ "ecdsa 0.14.8",
+ "hex",
+ "http 0.2.12",
+ "jsonwebtoken 9.3.0",
+ "k256 0.11.6",
+ "keystore-rs",
+ "log",
+ "pretty_env_logger",
+ "prism-common",
+ "prism-da",
+ "prism-keys",
+ "prism-prover",
+ "prism-storage",
+ "prism-tree",
+ "reclaim-rust-sdk",
+ "serde",
+ "serde_json",
+ "tendermint 0.28.0",
+ "thiserror 2.0.11",
+ "tokio",
+ "tower-http 0.3.5",
 ]
 
 [[package]]
