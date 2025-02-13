@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use axum::{
     routing::post,
+    routing::get,
     Router,
     middleware,
 };
@@ -15,6 +16,7 @@ use http::{
     method::Method
 };
 use crate::proof::apply_proof;
+use crate::proof::get_account;
 use crate::services::auth::auth;
 use crate::middleware::auth::auth_middleware;
 
@@ -54,6 +56,7 @@ impl ApiService {
 
         let protected_routes = Router::new()
             .route("/proof", post(apply_proof))
+            .route("/get-account", get(get_account))
             .layer(middleware::from_fn(auth_middleware));
 
         Router::new()

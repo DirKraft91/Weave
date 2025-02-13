@@ -21,6 +21,7 @@ use prism_common::{
 };
 use keystore_rs::{KeyChain, KeyStore};
 use prism_tree::AccountResponse::Found;
+use prism_tree::AccountResponse::NotFound;
 
 pub enum IdentityProvider {
     X,
@@ -290,6 +291,52 @@ pub struct ProofApplyPayload {
 #[derive(Serialize)]
 pub struct ProofApplyResponse {
     success: bool,
+}
+
+#[derive(Serialize)]
+struct ErrorResponse {
+    error: String,
+}
+#[derive(Serialize)]
+struct AccountResponce {
+    id: String,
+}
+
+pub async fn get_account(
+    State(prover): State<Arc<Prover>>,
+    Extension(auth_user): Extension<AuthUser>
+) -> impl IntoResponse {
+    let user_id = auth_user.user_id;
+
+    match prover.get_account(&user_id).await {
+        Ok(Found(account_box, proof)) => {
+            // TODO do we need to check the proof or something?
+            let account = *account_box;
+            let account_id = account.id();
+            let signed_data = account.signed_data();
+            for signed in account.signed_data() {
+                let raw_data: &Vec<u8> = &signed.data;
+                println!("row_data_log{:?}", raw_data);
+            }
+            (AxumHttp::StatusCode::OK, Json(AccountResponce{
+                id: account_id.to_string(),
+            })).into_response()
+        }
+        Ok(NotFound(proof)) => (
+            AxumHttp:: StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
+                error: "Account not found".to_string(),
+            }),
+        )
+            .into_response(),
+        Err(_) => (
+            AxumHttp::StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
+                error: "Something went wrong".to_string(),
+            }),
+        )
+            .into_response(),
+    }
 }
 
 pub async fn apply_proof(
