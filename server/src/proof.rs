@@ -91,7 +91,7 @@ impl From<anyhow::Error> for ProofServiceError {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct GoogleProviderIdentityRecord {
     proof: ReclaimProof,
     email: String,
@@ -99,7 +99,7 @@ struct GoogleProviderIdentityRecord {
     provider: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct XProviderIdentityRecord {
     proof: ReclaimProof,
     nickname: String,
@@ -107,7 +107,7 @@ struct XProviderIdentityRecord {
     provider: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct GithubProviderIdentityRecord {
     proof: ReclaimProof,
     username: String,
@@ -115,7 +115,7 @@ struct GithubProviderIdentityRecord {
     provider: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct LinkedinProviderIdentityRecord {
     proof: ReclaimProof,
     username: String,
@@ -123,7 +123,7 @@ struct LinkedinProviderIdentityRecord {
     provider: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 enum IdentityRecord {
     X(XProviderIdentityRecord),
     Google(GoogleProviderIdentityRecord),
@@ -300,6 +300,7 @@ struct ErrorResponse {
 #[derive(Serialize)]
 struct AccountResponce {
     id: String,
+    proofs: Vec<IdentityRecord>,
 }
 
 pub async fn get_account(
@@ -313,13 +314,21 @@ pub async fn get_account(
             // TODO do we need to check the proof or something?
             let account = *account_box;
             let account_id = account.id();
-            let signed_data = account.signed_data();
+            let mut proofs: Vec<IdentityRecord> = Vec::new();
+            
             for signed in account.signed_data() {
                 let raw_data: &Vec<u8> = &signed.data;
+                match serde_json::from_slice::<IdentityRecord>(raw_data) {
+                    Ok(proof_data) => {
+                        proofs.push(proof_data);
+                    },
+                    Err(e) => eprintln!("Error: {:?}, raw: {:?}", e, String::from_utf8_lossy(raw_data)),
+                }
                 println!("row_data_log{:?}", raw_data);
             }
             (AxumHttp::StatusCode::OK, Json(AccountResponce{
                 id: account_id.to_string(),
+                proofs: proofs,
             })).into_response()
         }
         Ok(NotFound(proof)) => (
