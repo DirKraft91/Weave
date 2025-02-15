@@ -3,12 +3,8 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use crate::services::jwt::JwtService;
-
-#[derive(Clone)]
-pub struct AuthUser {
-    pub user_id: String,  // from Claims.sub
-}
+use crate::domain::models::auth::JwtUserPayload;
+use crate::utils::jwt;
 
 pub async fn auth_middleware<B>(
     mut request: Request<B>,
@@ -21,11 +17,9 @@ pub async fn auth_middleware<B>(
 
     match auth_header {
         Some(auth_str) => {
-            match JwtService::extract_token(auth_str) {
+            match jwt::extract_token(&auth_str) {
                 Ok(claims) => {
-                    request.extensions_mut().insert(AuthUser {
-                        user_id: claims.sub,
-                    });
+                    request.extensions_mut().insert(JwtUserPayload::new(claims.sub));
                     Ok(next.run(request).await)
                 }
                 Err(_) => Err(StatusCode::UNAUTHORIZED),

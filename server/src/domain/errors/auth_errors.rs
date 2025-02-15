@@ -1,33 +1,6 @@
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use crate::domain::errors::user_errors::UserError;
 
-// Authentication Payloads
-#[derive(Serialize, Deserialize)]
-pub struct SignInWalletPayload {
-    pub public_key: String,
-    pub signature: String,
-    pub signer: String,
-    pub message: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Claims {
-    pub sub: String,  // subject (address)
-    pub exp: i64,     // expiration time
-    pub iat: i64,     // issued at
-}
-
-#[derive(Serialize)]
-pub struct SignInWalletResponse {
-    pub token: String,
-}
-
-#[derive(Clone)]
-pub struct AuthUser {
-    pub user_id: String,  // from Claims.sub
-}
-
-// Custom Errors
 #[derive(Debug, Error)]
 pub enum AuthError {
     #[error("Invalid signature: {0}")]
@@ -50,6 +23,9 @@ pub enum AuthError {
 
     #[error("Token validation error: {0}")]
     TokenValidationError(String),
+
+    #[error(transparent)]
+    UserError(#[from] UserError),
 }
 
 impl axum::response::IntoResponse for AuthError {

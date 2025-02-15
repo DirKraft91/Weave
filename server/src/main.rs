@@ -1,13 +1,11 @@
-mod operations;
-mod proof;
-mod services;
-mod handlers;
 mod middleware;
-
+mod api;
+mod domain;
+mod utils;
+mod prover;
+mod services;
 use anyhow::Result;
 use tokio::spawn;
-use crate::handlers::router::ApiService;
-use crate::services::node::NodeService;
 use dotenv::dotenv;
 
 pub static SERVICE_ID: &str = "weave_service";
@@ -22,19 +20,20 @@ async fn main() -> Result<()> {
         );
     pretty_env_logger::init();
 
-    let node_service = NodeService::new();
-    let api_service = ApiService::new(&node_service.prover);
+    let prover = prover::create_prover_server();
+    let prover_clone = prover.clone();
+    
 
     tokio::select! {
         _ = spawn(async move {
-            if let Err(e) = node_service.run_prover().await {
+            if let Err(e) = prover::start_prover_server(prover).await {
                 log::error!("Error occurred while running prover: {:?}", e);
             }
         }) => {
             println!("Prover runner task completed");
         }
         _ = spawn(async move {
-            if let Err(e) = api_service.start_server().await {
+            if let Err(e) = api::server::start_server(prover_clone).await {
                 log::error!("Error occurred while running API server: {:?}", e);
             }
         }) => {

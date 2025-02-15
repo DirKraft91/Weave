@@ -1,5 +1,3 @@
-pub mod auth;
-pub mod node;
-pub mod jwt;
-pub mod models;
-pub mod signature_service;
+pub mod auth_service;
+pub mod proof_service;
+pub mod user_service;
