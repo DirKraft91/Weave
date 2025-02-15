@@ -11,8 +11,6 @@ use crate::handlers::router::ApiService;
 use crate::services::node::NodeService;
 use dotenv::dotenv;
 
-pub static SERVICE_ID: &str = "weave_service";
-
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv().ok();
