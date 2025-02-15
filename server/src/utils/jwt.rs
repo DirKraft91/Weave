@@ -3,29 +3,43 @@ use chrono::{Duration as ChronoDuration, Utc};
 use jsonwebtoken::{encode, decode, EncodingKey, DecodingKey, Header, Validation};
 use crate::domain::errors::auth_errors::AuthError;
 
+// Access token lifetime in minutes
+const ACCESS_TOKEN_LIFETIME_MINUTES: i64 = 15;
+// Refresh token lifetime in days
+const REFRESH_TOKEN_LIFETIME_DAYS: i64 = 7;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,  // subject (address)
     pub exp: i64,     // expiration time
     pub iat: i64,     // issued at
+    pub token_type: TokenType,  // type of token
 }
 
-pub fn create_token(signer: String) -> Result<String, AuthError> {
+#[derive(Debug, Serialize, Deserialize)]
+pub enum TokenType {
+    Access,
+    Refresh,
+}
+
+fn create_token_internal(signer: String, token_type: TokenType) -> Result<String, AuthError> {
     let expiration = Utc::now()
-        .checked_add_signed(ChronoDuration::hours(24))
+        .checked_add_signed(match token_type {
+            TokenType::Access => ChronoDuration::minutes(ACCESS_TOKEN_LIFETIME_MINUTES),
+            TokenType::Refresh => ChronoDuration::days(REFRESH_TOKEN_LIFETIME_DAYS),
+        })
         .expect("valid timestamp")
         .timestamp();
 
     let claims = Claims {
-        sub: signer.to_string(),
+        sub: signer,
         exp: expiration,
         iat: Utc::now().timestamp(),
+        token_type,
     };
 
-    // let secret_key = std::env::var("JWT_SECRET_KEY")
-    //     .map_err(|_| AuthError::EnvVarError("JWT_SECRET_KEY must be set".to_string()))?;
-    let secret_key = "secret".to_string();
+    let secret_key = std::env::var("JWT_SECRET_KEY")
+        .map_err(|_| AuthError::EnvVarError("JWT_SECRET_KEY must be set".to_string()))?;
 
     encode(
         &Header::default(),
@@ -35,8 +49,17 @@ pub fn create_token(signer: String) -> Result<String, AuthError> {
     .map_err(|e| AuthError::TokenGenerationError(e.to_string()))
 }
 
+pub fn create_access_token(signer: String) -> Result<String, AuthError> {
+    create_token_internal(signer, TokenType::Access)
+}
+
+pub fn create_refresh_token(signer: String) -> Result<String, AuthError> {
+    create_token_internal(signer, TokenType::Refresh)
+}
+
 pub fn decode_token(token: String) -> Result<Claims, AuthError> {
-    let secret_key = "secret".to_string();
+    let secret_key = std::env::var("JWT_SECRET_KEY")
+        .map_err(|_| AuthError::EnvVarError("JWT_SECRET_KEY must be set".to_string()))?;
 
     decode::<Claims>(
         &token,
