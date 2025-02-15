@@ -18,7 +18,7 @@ pub struct Claims {
     pub token_type: TokenType, // type of token
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum TokenType {
     Access,
     Refresh,

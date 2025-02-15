@@ -3,6 +3,7 @@ mod proof;
 mod services;
 mod handlers;
 mod middleware;
+mod config;
 
 use anyhow::Result;
 use tokio::spawn;

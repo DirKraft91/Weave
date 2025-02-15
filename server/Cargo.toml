@@ -3,6 +3,10 @@ name = "weave-server"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "server"
+path = "src/lib.rs"
+
 [dependencies]
 axum = "0.6.0"
 dotenv = "0.15"
@@ -30,3 +34,4 @@ prism-keys = { git = "https://github.com/deltadevsde/prism", branch = "main" }
 prism-storage = { git = "https://github.com/deltadevsde/prism", branch = "main" }
 prism-da = { git = "https://github.com/deltadevsde/prism", branch = "main" }
 keystore-rs = { version = "0.3" }
+lazy_static = "1.4.0"

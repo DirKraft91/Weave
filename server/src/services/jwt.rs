@@ -1,13 +1,35 @@
 use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, decode, EncodingKey, DecodingKey, Header, Validation};
 use crate::services::models::{AuthError, Claims, TokenType, TokenPair};
+use crate::config::TokenConfig;
+use lazy_static::lazy_static;
+use std::sync::Arc;
 
-pub struct JwtService;
+pub struct JwtService {
+    config: TokenConfig,
+}
+
+lazy_static! {
+    static ref JWT_SERVICE: Arc<JwtService> = Arc::new(JwtService::new(TokenConfig::default()));
+}
 
 impl JwtService {
-     pub fn create_token_pair(signer: &str) -> Result<TokenPair, AuthError> {
-        let access_token = Self::create_token(signer, Duration::hours(1), TokenType::Access)?;
-        let refresh_token = Self::create_token(signer, Duration::days(30), TokenType::Refresh)?;
+    pub fn new(config: TokenConfig) -> Self {
+        Self { config }
+    }
+
+    pub fn create_token_pair(&self, signer: &str) -> Result<TokenPair, AuthError> {
+        let access_token = self.create_token(
+            signer,
+            self.config.access_token_duration,
+            TokenType::Access
+        )?;
+
+        let refresh_token = self.create_token(
+            signer,
+            self.config.refresh_token_duration,
+            TokenType::Refresh
+        )?;
 
         Ok(TokenPair {
             access_token,
@@ -16,9 +38,10 @@ impl JwtService {
     }
 
     fn create_token(
+        &self,
         signer: &str,
         duration: Duration,
-        token_type: TokenType
+        token_type: TokenType,
     ) -> Result<String, AuthError> {
         let expiration = Utc::now()
             .checked_add_signed(duration)
@@ -32,24 +55,18 @@ impl JwtService {
             token_type,
         };
 
-        let secret_key = std::env::var("JWT_SECRET_KEY")
-            .map_err(|_| AuthError::EnvVarError("JWT_SECRET_KEY must be set".to_string()))?;
-
         encode(
             &Header::default(),
             &claims,
-            &EncodingKey::from_secret(secret_key.as_bytes()),
+            &EncodingKey::from_secret(self.config.jwt_secret.as_bytes()),
         )
         .map_err(|e| AuthError::TokenGenerationError(e.to_string()))
     }
 
-    pub fn verify_token(token: &str, expected_type: TokenType) -> Result<Claims, AuthError> {
-        let secret_key = std::env::var("JWT_SECRET_KEY")
-            .map_err(|_| AuthError::EnvVarError("JWT_SECRET_KEY must be set".to_string()))?;
-
+    pub fn verify_token(&self, token: &str, expected_type: TokenType) -> Result<Claims, AuthError> {
         let claims = decode::<Claims>(
             token,
-            &DecodingKey::from_secret(secret_key.as_bytes()),
+            &DecodingKey::from_secret(self.config.jwt_secret.as_bytes()),
             &Validation::default(),
         )
         .map_err(|e| AuthError::TokenValidationError(e.to_string()))?
@@ -62,10 +79,14 @@ impl JwtService {
         Ok(claims)
     }
 
+    pub fn instance() -> Arc<JwtService> {
+        JWT_SERVICE.clone()
+    }
+
     pub fn extract_token(auth_header: &str) -> Result<Claims, AuthError> {
         let token = auth_header.strip_prefix("Bearer ")
             .ok_or_else(|| AuthError::TokenValidationError("Invalid authorization header format".to_string()))?;
 
-        Self::verify_token(token, TokenType::Access)
+        Self::instance().verify_token(token, TokenType::Access)
     }
 }

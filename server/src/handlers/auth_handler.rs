@@ -30,9 +30,9 @@ pub async fn auth(
 pub async fn refresh_token(
     Json(payload): Json<RefreshTokenRequest>,
 ) -> impl IntoResponse {
-    match JwtService::verify_token(&payload.refresh_token, TokenType::Refresh) {
+    match JwtService::instance().verify_token(&payload.refresh_token, TokenType::Refresh) {
         Ok(claims) => {
-            match JwtService::create_token_pair(&claims.sub) {
+            match JwtService::instance().create_token_pair(&claims.sub) {
                 Ok(token_pair) => {
                     (StatusCode::OK, Json(SignInWalletResponse {
                         access_token: token_pair.access_token,

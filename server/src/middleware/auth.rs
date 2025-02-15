@@ -29,7 +29,7 @@ pub async fn auth_middleware<B>(
             }
 
             // Check if the token is valid
-            match JwtService::verify_token(token, TokenType::Access) {
+            match JwtService::instance().verify_token(token, TokenType::Access) {
                 Ok(claims) => {
                     request.extensions_mut().insert(AuthUser {
                         user_id: claims.sub,

@@ -77,7 +77,7 @@ const proofGoogle = {
   publicData: null,
 };
 
-const proofLinkedin = {
+const proofLinkedin: Proof = {
   identifier: '0x0fcea76f2b710fd22ab0421d3301d8a83af657f1cab620f6ab7137eb2dd4534e',
   claimData: {
     provider: 'http',
@@ -107,35 +107,71 @@ export function ReclaimDemo() {
   const [requestUrl, setRequestUrl] = useState('');
   const [proofs, setProofs] = useState([]);
 
-  const validateProof = async (proofs: Proof | Proof[]) => {
+  const validateProof = async (proofs: Proof | Proof[], token?: string) => {
     try {
-      const token = localStorage.getItem('jwt_token');
-      if (!token) {
-        throw new Error('No authentication token found');
+      const access_token = token || localStorage.getItem('access_token');
+      const refresh_token = localStorage.getItem('refresh_token');
+
+      console.log('Tokens status:', {
+        access: access_token ? 'present' : 'missing',
+        refresh: refresh_token ? 'present' : 'missing'
+      });
+
+      if (!access_token) {
+        throw new Error('No access token found');
       }
+
+      console.log('Attempting to validate proof with token:', access_token.substring(0, 10) + '...');
 
       const response = await fetch('http://localhost:8080/proof', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${access_token}`,
         },
         body: JSON.stringify({ proof: proofs, provider: 'linkedin' }),
       });
 
+      console.log('Response status:', response.status);
+      const responseText = await response.text();
+      console.log('Response body:', responseText);
+
       if (!response.ok) {
-        if (response.status === 401) {
-          console.error('Authentication token expired or invalid');
-          localStorage.removeItem('jwt_token'); // Clear invalid token
-          return;
+        if (response.status === 401 && !token) {
+          console.log('Token expired, attempting refresh...');
+          // Try to refresh the token
+          const refresh_token = localStorage.getItem('refresh_token');
+          if (!refresh_token) {
+            throw new Error('No refresh token found');
+          }
+
+          const refreshResponse = await fetch('http://localhost:8080/auth/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token }),
+          });
+
+          if (!refreshResponse.ok) {
+            throw new Error('Failed to refresh token');
+          }
+
+          const { access_token: new_access_token, refresh_token: new_refresh_token } =
+            await refreshResponse.json();
+
+          localStorage.setItem('access_token', new_access_token);
+          localStorage.setItem('refresh_token', new_refresh_token);
+
+          // Retry the original request with new token
+          return validateProof(proofs, new_access_token);
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
       }
 
       const result = await response.json();
       console.log('Proof registered successfully:', result);
     } catch (error) {
       console.error('Failed to register proof:', error);
+      throw error; // Re-throw to see the full error stack
     }
   };
 

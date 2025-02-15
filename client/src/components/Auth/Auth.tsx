@@ -56,7 +56,10 @@ export const Auth: FC = () => {
       const responseData = await response.json();
       localStorage.setItem('access_token', responseData.access_token);
       localStorage.setItem('refresh_token', responseData.refresh_token);
-      console.log('Auth response:', responseData);
+      console.log('Auth tokens saved:', {
+        access: responseData.access_token.substring(0, 10) + '...',
+        refresh: responseData.refresh_token.substring(0, 10) + '...'
+      });
     } catch (error) {
       console.error('Error during authentication:', error);
     }

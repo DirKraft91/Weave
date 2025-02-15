@@ -26,7 +26,7 @@ impl AuthService {
             .map_err(|e| AuthError::AccountCreationError(e.to_string()))?;
 
         // Generate JWT tokens
-        let token_pair = JwtService::create_token_pair(&body.signer)?;
+        let token_pair = JwtService::instance().create_token_pair(&body.signer)?;
 
         Ok(AuthResult {
             access_token: token_pair.access_token,
