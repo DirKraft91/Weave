@@ -3,7 +3,7 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use crate::services::auth::JwtService;
+use crate::services::jwt::JwtService;
 
 #[derive(Clone)]
 pub struct AuthUser {

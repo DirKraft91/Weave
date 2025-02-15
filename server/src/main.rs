@@ -1,11 +1,12 @@
 mod operations;
 mod proof;
 mod services;
+mod handlers;
 mod middleware;
 
 use anyhow::Result;
 use tokio::spawn;
-use crate::services::api::ApiService;
+use crate::handlers::router::ApiService;
 use crate::services::node::NodeService;
 use dotenv::dotenv;
 

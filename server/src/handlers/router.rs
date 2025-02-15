@@ -17,7 +17,7 @@ use http::{
 };
 use crate::proof::apply_proof;
 use crate::proof::get_account;
-use crate::services::auth::auth;
+use crate::handlers::auth_handler::auth;
 use crate::middleware::auth::auth_middleware;
 
 pub struct ApiService {
