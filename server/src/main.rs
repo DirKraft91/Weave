@@ -4,6 +4,7 @@ mod services;
 mod handlers;
 mod middleware;
 mod config;
+mod constants;
 
 use anyhow::Result;
 use tokio::spawn;
