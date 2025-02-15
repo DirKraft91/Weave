@@ -17,7 +17,7 @@ use http::{
 };
 use crate::proof::apply_proof;
 use crate::proof::get_account;
-use crate::handlers::auth_handler::auth;
+use crate::handlers::auth_handler::{auth, refresh_token};
 use crate::middleware::auth::auth_middleware;
 
 pub struct ApiService {
@@ -52,7 +52,8 @@ impl ApiService {
             ]);
 
         let public_routes = Router::new()
-            .route("/auth", post(auth));
+            .route("/auth", post(auth))
+            .route("/auth/refresh", post(refresh_token));
 
         let protected_routes = Router::new()
             .route("/proof", post(apply_proof))
