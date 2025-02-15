@@ -10,14 +10,24 @@ pub async fn auth_middleware<B>(
     mut request: Request<B>,
     next: Next<B>,
 ) -> Result<Response, StatusCode> {
-    let auth_header = request
+    let access_token = request
         .headers()
-        .get(header::AUTHORIZATION)
-        .and_then(|header| header.to_str().ok());
+        .get(header::COOKIE)
+        .and_then(|cookie_header| {
+            cookie_header
+                .to_str()
+                .ok()
+                .and_then(|cookie_str| {
+                    cookie_str
+                        .split(';')
+                        .find(|cookie| cookie.trim().starts_with("access_token="))
+                        .map(|cookie| cookie.trim().strip_prefix("access_token=").unwrap())
+                })
+        });
 
-    match auth_header {
-        Some(auth_str) => {
-            match jwt::extract_token(&auth_str) {
+    match access_token {
+        Some(token) => {
+            match jwt::decode_token(token.to_string()) {
                 Ok(claims) => {
                     request.extensions_mut().insert(JwtUserPayload::new(claims.sub));
                     Ok(next.run(request).await)

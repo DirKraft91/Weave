@@ -109,24 +109,21 @@ export function ReclaimDemo() {
 
   const validateProof = async (proofs: Proof | Proof[]) => {
     try {
-      const token = localStorage.getItem('jwt_token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
       const response = await fetch('http://localhost:8080/proof', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ proof: proofs, provider: 'linkedin' }),
+        body: JSON.stringify({
+          proof: proofs,
+          provider: 'linkedin'
+        }),
       });
 
       if (!response.ok) {
         if (response.status === 401) {
           console.error('Authentication token expired or invalid');
-          localStorage.removeItem('jwt_token'); // Clear invalid token
           return;
         }
         throw new Error(`HTTP error! status: ${response.status}`);

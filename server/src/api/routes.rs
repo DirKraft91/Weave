@@ -10,24 +10,29 @@ use axum::{
 use tower_http::cors::{CorsLayer, Any};
 use http::{
     header::HeaderName,
-    method::Method
+    method::Method,
+    HeaderValue,
 };
 use crate::middleware::auth::auth_middleware;
 use crate::api::handlers::proof::add_proof;
 use crate::api::handlers::user::get_user;
-use crate::api::handlers::auth::auth_wallet;
+use crate::api::handlers::auth::{auth_wallet, refresh_tokens};
 
 pub fn create_router(prover: Arc<Prover>) -> Router {
     let cors = CorsLayer::new()
-        .allow_origin(Any)
+        .allow_origin([
+            "http://localhost:5173". parse::<HeaderValue>().unwrap(),
+        ])
         .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
         .allow_headers(vec![
             HeaderName::from_static("content-type"),
             HeaderName::from_static("authorization"),
-        ]);
+        ])
+        .allow_credentials(true);
 
     let public_routes = Router::new()
-        .route("/auth", post(auth_wallet));
+        .route("/auth", post(auth_wallet))
+        .route("/refresh", post(refresh_tokens));
 
     let protected_routes = Router::new()
         .route("/proof", post(add_proof))

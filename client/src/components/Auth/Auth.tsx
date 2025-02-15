@@ -1,11 +1,29 @@
 import { useChainStore, useWalletStore } from '@/contexts';
+import { useTokens } from '@/hooks/useTokens';
 import { useWalletClient } from '@cosmos-kit/react';
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
+
+const CHECK_INTERVAL = 14 * 60 * 1000; // 14 minutes
 
 export const Auth: FC = () => {
   const { selectedWallet } = useWalletStore();
   const { selectedChain } = useChainStore();
   const { client, status } = useWalletClient(selectedWallet?.walletName);
+  const { refreshTokens } = useTokens();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const success = await refreshTokens();
+      if (!success) {
+        // TODO: redirect to login page ??
+        console.log('Session expired, please sign in again');
+      }
+    };
+
+    const interval = setInterval(checkAuth, CHECK_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [refreshTokens]);
 
   const handleSignIn = async () => {
     if (status !== 'Done') {
@@ -13,7 +31,7 @@ export const Auth: FC = () => {
     }
 
     try {
-      const account = await client?.getAccount(selectedChain);
+      const account = await client?.getAccount?.(selectedChain);
       if (!account) {
         throw new Error('Could not retrieve account');
       }
@@ -21,14 +39,15 @@ export const Auth: FC = () => {
       const message = JSON.stringify({
         chain_id: selectedChain,
         account: account.address,
-        nonce: Date.now().toString(), // Date.now().toString(), // Используем таймстемп для защиты от replay attack
+        nonce: Date.now().toString(), // Use nonce for replay attack protection
         message: 'Hello, Keplr!',
       });
 
-      const signResult = await client?.signArbitrary(selectedChain, account.address, message);
+      const signResult = await client?.signArbitrary?.(selectedChain, account.address, message);
 
       const response = await fetch('http://localhost:8080/auth', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           signer: account.address,
@@ -50,9 +69,7 @@ export const Auth: FC = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const responseData = await response.json();
-      localStorage.setItem('jwt_token', responseData.token);
-      console.log('Auth response:', responseData);
+      console.log('Auth successful:', response);
     } catch (error) {
       console.error('Error during authentication:', error);
     }
