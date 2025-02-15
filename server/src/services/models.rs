@@ -15,11 +15,36 @@ pub struct Claims {
     pub sub: String,  // subject (address)
     pub exp: i64,     // expiration time
     pub iat: i64,     // issued at
+    pub token_type: TokenType, // type of token
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum TokenType {
+    Access,
+    Refresh,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TokenPair {
+    pub access_token: String,
+    pub refresh_token: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RefreshTokenRequest {
+    pub refresh_token: String,
 }
 
 #[derive(Serialize)]
 pub struct SignInWalletResponse {
-    pub token: String,
+    pub access_token: String,
+    pub refresh_token: String,
+}
+
+#[derive(Debug)]
+pub struct AuthResult {
+    pub access_token: String,
+    pub refresh_token: String,
 }
 
 #[derive(Clone)]
