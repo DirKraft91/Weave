@@ -8,7 +8,7 @@ use prism_prover::{webserver::WebServerConfig, Config, Prover};
 use log::debug;
 
 use crate::operations::register_service;
-use crate::SERVICE_ID;
+use crate::constants::SERVICE_ID;
 
 
 pub struct NodeService {
@@ -42,7 +42,7 @@ impl NodeService {
             )
             .unwrap(),
         );
-    
+
         Self { prover }
     }
 

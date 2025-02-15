@@ -13,7 +13,7 @@ use prism_tree::AccountResponse::Found;
 
 use anyhow::{anyhow, Result};
 
-use crate::SERVICE_ID;
+use crate::constants::SERVICE_ID;
 
 pub async fn register_service(prover: Arc<Prover>) -> Result<()> {
     // First, we make sure the service is not already registered.

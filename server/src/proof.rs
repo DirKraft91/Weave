@@ -14,7 +14,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use crate::services::models::AuthUser;
-use crate::SERVICE_ID;
+use crate::constants::SERVICE_ID;
 use prism_prover::Prover;
 use prism_keys::SigningKey;
 use prism_common::{
