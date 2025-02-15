@@ -3,12 +3,11 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use crate::services::jwt::JwtService;
-
-#[derive(Clone)]
-pub struct AuthUser {
-    pub user_id: String,  // from Claims.sub
-}
+use crate::services::{
+    jwt::JwtService,
+    models::{AuthUser, TokenType},
+    token_utils::TokenUtils,
+};
 
 pub async fn auth_middleware<B>(
     mut request: Request<B>,
@@ -21,7 +20,16 @@ pub async fn auth_middleware<B>(
 
     match auth_header {
         Some(auth_str) => {
-            match JwtService::extract_token(auth_str) {
+            let token = auth_str.strip_prefix("Bearer ")
+                .ok_or(StatusCode::UNAUTHORIZED)?;
+
+            // Check if the token should be refreshed
+            if TokenUtils::should_refresh_token(token) {
+                return Err(StatusCode::UNAUTHORIZED);
+            }
+
+            // Check if the token is valid
+            match JwtService::verify_token(token, TokenType::Access) {
                 Ok(claims) => {
                     request.extensions_mut().insert(AuthUser {
                         user_id: claims.sub,

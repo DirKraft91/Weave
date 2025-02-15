@@ -13,7 +13,8 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use crate::{middleware::auth::AuthUser, SERVICE_ID};
+use crate::services::models::AuthUser;
+use crate::SERVICE_ID;
 use prism_prover::Prover;
 use prism_keys::SigningKey;
 use prism_common::{
@@ -234,12 +235,12 @@ impl ProofService for ReclaimProofService {
         debug!("ReclaimProofService::apply_proof: {}", self.auth_user.user_id);
         if let Found(account, _) = self.prover.get_account(&self.auth_user.user_id).await
             .map_err(|_| ProofServiceError::AccountNotFound)? {
-            
+
             let tx_payload: IdentityRecord = self.prepare_payload_to_apply()?;
             let json_string = serde_json::to_string(&tx_payload)
                 .map_err(|e| ProofServiceError::SerializationError(e.to_string()))?;
             let data = json_string.as_bytes();
-            
+
             let user_keystore = KeyChain
                 .get_signing_key(&format!("{}/{}", self.auth_user.user_id, SERVICE_ID))
                 .map_err(|e| ProofServiceError::KeyStoreError(e.to_string()))?;
@@ -249,13 +250,13 @@ impl ProofService for ReclaimProofService {
             let hash = Digest::hash(data);
             let signature = user_sk.sign(&hash.to_bytes());
 
-            let signature_bundle = SignatureBundle { 
-                verifying_key: user_vk, 
+            let signature_bundle = SignatureBundle {
+                verifying_key: user_vk,
                 signature: signature
             };
 
-            let add_data_op = Operation::AddData { 
-                data: data.to_vec(), 
+            let add_data_op = Operation::AddData {
+                data: data.to_vec(),
                 data_signature: signature_bundle
             };
 
@@ -315,7 +316,7 @@ pub async fn get_account(
             let account = *account_box;
             let account_id = account.id();
             let mut proofs: Vec<IdentityRecord> = Vec::new();
-            
+
             for signed in account.signed_data() {
                 let raw_data: &Vec<u8> = &signed.data;
                 match serde_json::from_slice::<IdentityRecord>(raw_data) {
