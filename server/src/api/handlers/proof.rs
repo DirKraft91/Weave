@@ -20,7 +20,6 @@ pub async fn add_proof(
     let proof_service = ReclaimProofService {
         data: payload.proof,
         provider: payload.provider,
-        jwt_user_payload: jwt_user_payload.clone(),
     };
     let data = match proof_service.validate_and_get_identity_record().await {
         Ok(data) => data,   

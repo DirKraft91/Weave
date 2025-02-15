@@ -2,14 +2,13 @@ use reclaim_rust_sdk::{ Proof as ReclaimProof, ProofNotVerifiedError as ReclaimP
 use std::string::ToString;
 use serde_json::Value;
 use chrono::Utc;
-use crate::{domain::errors::proof_errors::ProofError, domain::models::auth::JwtUserPayload };
+use crate::domain::errors::proof_errors::ProofError;
 
 use crate::domain::models::proof::{ IdentityProvider, IdentityRecord, GoogleProviderIdentityRecord, XProviderIdentityRecord, GithubProviderIdentityRecord, LinkedinProviderIdentityRecord };
 
 pub struct ReclaimProofService {
     pub data: ReclaimProof,
     pub provider: IdentityProvider,
-    pub jwt_user_payload: JwtUserPayload,
 }
 
 impl ReclaimProofService {
