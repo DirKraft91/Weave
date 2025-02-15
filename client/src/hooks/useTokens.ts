@@ -9,13 +9,13 @@ export const useTokens = () => {
       });
 
       if (response.status === 401) {
-        // Токен истек или недействителен
+        // Session expired
         console.log('Session expired');
         return false;
       }
 
       if (response.status === 403) {
-        // Refresh token был скомпрометирован
+        // Security issue detected, please sign in again
         console.log('Security issue detected, please sign in again');
         return false;
       }
