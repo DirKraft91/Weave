@@ -78,6 +78,7 @@ impl LinkedinProviderIdentityRecord {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
 pub enum IdentityRecord {
     X(XProviderIdentityRecord),
     Google(GoogleProviderIdentityRecord),
