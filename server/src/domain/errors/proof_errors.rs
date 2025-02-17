@@ -1,11 +1,9 @@
-use reclaim_rust_sdk::ProofNotVerifiedError as ReclaimProofNotVerifiedError;
 use thiserror::Error;
-
 
 #[derive(Debug, Error)]
 pub enum ProofError {
-    #[error("Reclaim proof could not be verified: {0}")]
-    ReclaimProofNotVerifiedError(ReclaimProofNotVerifiedError),
+    #[error("Proof verification failed: {0}")]
+    ProofNotVerifiedError(String),
 
     #[error("Failed to deserialize context data: {0}")]
     ContextDeserializationError(serde_json::Error),
@@ -26,7 +24,7 @@ pub enum ProofError {
 impl axum::response::IntoResponse for ProofError {
     fn into_response(self) -> axum::response::Response {
         let (status, error_message) = match self {
-            ProofError::ReclaimProofNotVerifiedError(_) => (
+            ProofError::ProofNotVerifiedError(_) => (
                 axum::http::StatusCode::BAD_REQUEST,
                 self.to_string(),
             ),

@@ -8915,6 +8915,7 @@ name = "weave-server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum 0.6.20",
  "base64 0.20.0",
  "chrono",

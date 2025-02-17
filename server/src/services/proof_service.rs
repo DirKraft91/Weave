@@ -1,17 +1,42 @@
-use reclaim_rust_sdk::{ Proof as ReclaimProof, ProofNotVerifiedError as ReclaimProofNotVerifiedError };
+use reclaim_rust_sdk::{ Proof as ReclaimProof };
 use std::string::ToString;
 use serde_json::Value;
 use chrono::Utc;
 use crate::domain::errors::proof_errors::ProofError;
-
 use crate::domain::models::proof::{ GenericProviderIdentityRecord, GithubProviderIdentityRecord, GoogleProviderIdentityRecord, IdentityProvider, IdentityRecord, LinkedinProviderIdentityRecord, XProviderIdentityRecord };
 
-pub struct ReclaimProofService {
-    pub data: ReclaimProof,
-    pub provider: IdentityProvider,
+#[async_trait::async_trait]
+pub trait ProofValidator {
+    async fn validate(&self, proof: &ReclaimProof) -> Result<bool, ProofError>;
 }
 
-impl ReclaimProofService {
+pub struct ProofService<V: ProofValidator> {
+    pub data: ReclaimProof,
+    pub provider: IdentityProvider,
+    pub validator: V,
+}
+
+pub struct ReclaimProofValidator;
+
+#[async_trait::async_trait]
+impl ProofValidator for ReclaimProofValidator {
+    async fn validate(&self, proof: &ReclaimProof) -> Result<bool, ProofError> {
+        match reclaim_rust_sdk::verify_proof(proof).await {
+            Ok(is_valid) => {
+                if is_valid {
+                    Ok(true)
+                } else {
+                    Err(ProofError::ProofNotVerifiedError(
+                        "Proof is not valid".to_string(),
+                    ))
+                }
+            }
+            Err(e) => Err(ProofError::ProofNotVerifiedError(e.to_string())),
+        }
+    }
+}
+
+impl<V: ProofValidator> ProofService<V> {
     fn prepare_identity_record(&self) -> Result<IdentityRecord, ProofError> {
         match self.provider {
             IdentityProvider::X => {
@@ -80,9 +105,6 @@ impl ReclaimProofService {
                 )))
             },
             IdentityProvider::Other => {
-                let context: Value = serde_json::from_str(&self.data.claim_data.context)
-                .map_err(ProofError::ContextDeserializationError)?;
-
                 Ok(IdentityRecord::Generic(GenericProviderIdentityRecord::new(
                     self.data.clone(),
                     Utc::now().timestamp(),
@@ -93,16 +115,7 @@ impl ReclaimProofService {
     }
 
     async fn validate(&self) -> Result<bool, ProofError> {
-        match reclaim_rust_sdk::verify_proof(&self.data).await {
-            Ok(is_valid) => {
-                if is_valid {
-                    Ok(true)
-                } else {
-                    Err(ProofError::ReclaimProofNotVerifiedError(ReclaimProofNotVerifiedError("Proof is not valid".to_string())))
-                }
-            },
-            Err(e) => Err(ProofError::ReclaimProofNotVerifiedError(e)),
-        }
+        self.validator.validate(&self.data).await
     }
 
     pub async fn validate_and_get_identity_record(&self) -> Result<Vec<u8>, ProofError> {

@@ -31,3 +31,4 @@ prism-storage = { git = "https://github.com/deltadevsde/prism", branch = "main" 
 prism-da = { git = "https://github.com/deltadevsde/prism", branch = "main" }
 keystore-rs = { version = "0.3" }
 headers = "0.3"
+async-trait = "0.1"

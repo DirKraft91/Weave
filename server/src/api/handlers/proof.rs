@@ -6,9 +6,9 @@ use axum::{
 };
 use std::sync::Arc;
 use prism_prover::Prover;
-use crate::api::dto::request::proof_req::ApplyProofRequestDto;
+use crate::{api::dto::request::proof_req::ApplyProofRequestDto, services::proof_service::ReclaimProofValidator};
 use crate::api::dto::response::proof_res::ApplyProofResponseDto;
-use crate::services::proof_service::ReclaimProofService;
+use crate::services::proof_service::ProofService;
 use crate::services::user_service::UserService;
 use crate::domain::models::auth::JwtUserPayload;
 
@@ -17,9 +17,10 @@ pub async fn add_proof(
     Extension(jwt_user_payload): Extension<JwtUserPayload>,
     Json(payload): Json<ApplyProofRequestDto>,
 ) -> impl IntoResponse {
-    let proof_service = ReclaimProofService {
+    let proof_service = ProofService {
         data: payload.proof,
         provider: payload.provider,
+        validator: ReclaimProofValidator,
     };
     let data = match proof_service.validate_and_get_identity_record().await {
         Ok(data) => data,   
