@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use reclaim_rust_sdk::Proof as ReclaimProof;
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -7,7 +8,9 @@ pub enum IdentityProvider {
     X,
     Google,
     Github,
-    Linkedin
+    Linkedin,
+    #[serde(other)]
+    Other,
 }
 
 impl ToString for IdentityProvider {
@@ -17,6 +20,7 @@ impl ToString for IdentityProvider {
             IdentityProvider::Google => "google".to_string(),
             IdentityProvider::Github => "github".to_string(),
             IdentityProvider::Linkedin => "linkedin".to_string(),
+            IdentityProvider::Other => "other".to_string(),
         }
     }
 }
@@ -71,9 +75,29 @@ pub struct LinkedinProviderIdentityRecord {
     provider: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GenericProviderIdentityRecord {
+    proof: ReclaimProof,
+    provider: String,
+    created_at: i64,
+    extra_fields: Option<HashMap<String, String>>, // Holds dynamic fields
+}
+
 impl LinkedinProviderIdentityRecord {
     pub fn new(proof: ReclaimProof, username: String, created_at: i64, provider: String) -> Self {
         Self { proof, username, created_at, provider }
+    }
+}
+
+impl GenericProviderIdentityRecord {
+    pub fn new(proof: ReclaimProof, created_at: i64, provider: String) -> Self {
+        let public_data = proof.public_data.clone();
+        Self {
+            proof,
+            provider,
+            created_at,
+            extra_fields: public_data,
+        }
     }
 }
 
@@ -84,4 +108,5 @@ pub enum IdentityRecord {
     Google(GoogleProviderIdentityRecord),
     Github(GithubProviderIdentityRecord),
     Linkedin(LinkedinProviderIdentityRecord),
+    Generic(GenericProviderIdentityRecord),
 }

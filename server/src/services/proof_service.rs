@@ -4,7 +4,7 @@ use serde_json::Value;
 use chrono::Utc;
 use crate::domain::errors::proof_errors::ProofError;
 
-use crate::domain::models::proof::{ IdentityProvider, IdentityRecord, GoogleProviderIdentityRecord, XProviderIdentityRecord, GithubProviderIdentityRecord, LinkedinProviderIdentityRecord };
+use crate::domain::models::proof::{ GenericProviderIdentityRecord, GithubProviderIdentityRecord, GoogleProviderIdentityRecord, IdentityProvider, IdentityRecord, LinkedinProviderIdentityRecord, XProviderIdentityRecord };
 
 pub struct ReclaimProofService {
     pub data: ReclaimProof,
@@ -75,6 +75,16 @@ impl ReclaimProofService {
                 Ok(IdentityRecord::Linkedin(LinkedinProviderIdentityRecord::new(
                     self.data.clone(),
                     username,
+                    Utc::now().timestamp(),
+                    self.provider.to_string()
+                )))
+            },
+            IdentityProvider::Other => {
+                let context: Value = serde_json::from_str(&self.data.claim_data.context)
+                .map_err(ProofError::ContextDeserializationError)?;
+
+                Ok(IdentityRecord::Generic(GenericProviderIdentityRecord::new(
+                    self.data.clone(),
                     Utc::now().timestamp(),
                     self.provider.to_string()
                 )))
