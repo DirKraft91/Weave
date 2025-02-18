@@ -3,10 +3,10 @@ import path from 'path';
 import react from '@vitejs/plugin-react';
 import viteTsconfigPaths from 'vite-tsconfig-paths';
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), viteTsconfigPaths()],
+  plugins: [TanStackRouterVite({ autoCodeSplitting: true }), react(), viteTsconfigPaths()],
   optimizeDeps: {
     esbuildOptions: {
       define: {

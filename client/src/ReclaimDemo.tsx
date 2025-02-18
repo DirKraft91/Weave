@@ -117,7 +117,7 @@ export function ReclaimDemo() {
         },
         body: JSON.stringify({
           proof: proofs,
-          provider: 'linkedin'
+          provider: 'linkedin',
         }),
       });
 
@@ -137,9 +137,6 @@ export function ReclaimDemo() {
   };
 
   const getVerificationReq = async () => {
-    // Your credentials from the Reclaim Developer Portal
-    // Replace these with your actual credentials
-
     const APP_ID = '0xbfB817DdcF51E591A1a9261eaDb57F581BB40c04';
     const APP_SECRET = '0xcbd3a376cca4aaf5abfb98a76f840e414df9b07d96a471f9dac102fb2dd9cddb';
     const PROVIDER_ID = 'a9f1063c-06b7-476a-8410-9ff6e427e637';
