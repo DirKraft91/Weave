@@ -1,0 +1,10 @@
+# Ignore build artifacts
+
+target/
+\*\*/target/
+
+# Ignore git history
+
+.git/
+
+.cache/
