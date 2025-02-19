@@ -1,18 +1,27 @@
 import { createRoot } from 'react-dom/client';
-import { RouterProvider, createRouter, NotFoundRoute } from '@tanstack/react-router';
+import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { routeTree } from './routeTree.gen';
-import { Route as rootRoute } from './routes/__root.tsx';
+import { HeroUIProvider } from '@heroui/react';
+import './input.css';
 
-const notFoundRoute = new NotFoundRoute({
-  getParentRoute: () => rootRoute,
-  component: () => '404 Not Found',
+const router = createRouter({
+  routeTree,
+  defaultErrorComponent: ({ error }) => {
+    return <div>Error: {error.message}</div>;
+  },
+  defaultNotFoundComponent: () => {
+    return <div>404 Not Found</div>;
+  },
 });
 
-const router = createRouter({ routeTree, notFoundRoute });
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
   }
 }
 
-createRoot(document.getElementById('root')!).render(<RouterProvider router={router} />);
+createRoot(document.getElementById('root')!).render(
+  <HeroUIProvider>
+    <RouterProvider router={router} />
+  </HeroUIProvider>,
+);
