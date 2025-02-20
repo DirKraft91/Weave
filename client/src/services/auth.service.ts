@@ -77,8 +77,8 @@ class AuthService {
       }
 
       return {
-        success: true,
-        message: 'Successfully logged in',
+        success: data.success ?? true,
+        message: data.message || 'Successfully logged in',
         data: {
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
@@ -88,7 +88,7 @@ class AuthService {
       console.error('Login error:', error);
       return {
         success: false,
-        message: (error as Error).message,
+        message: (error as Error).message || 'Network error occurred',
       };
     }
   }
