@@ -4,9 +4,10 @@ import react from '@vitejs/plugin-react';
 import viteTsconfigPaths from 'vite-tsconfig-paths';
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
+import svgr from 'vite-plugin-svgr';
 
 export default defineConfig({
-  plugins: [TanStackRouterVite({ autoCodeSplitting: true }), react(), viteTsconfigPaths()],
+  plugins: [TanStackRouterVite({ autoCodeSplitting: true }), react(), viteTsconfigPaths(), svgr()],
   optimizeDeps: {
     esbuildOptions: {
       define: {

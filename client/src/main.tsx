@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { routeTree } from './routeTree.gen';
 import { HeroUIProvider } from '@heroui/react';
+import { ToastProvider } from '@heroui/toast';
 import './input.css';
 
 const router = createRouter({
@@ -23,5 +24,6 @@ declare module '@tanstack/react-router' {
 createRoot(document.getElementById('root')!).render(
   <HeroUIProvider>
     <RouterProvider router={router} />
+    <ToastProvider maxVisibleToasts={3} placement="top-right" />
   </HeroUIProvider>,
 );

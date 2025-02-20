@@ -3,7 +3,6 @@ import { useChain } from '@cosmos-kit/react';
 
 import { useChainStore } from '@/contexts';
 import { Connected } from './Connected';
-import { Connecting } from './Connecting';
 import { SelectWallet } from './SelectWallet';
 import { wallets } from '@/config/wallets';
 import { useWalletStore, walletStore } from '@/contexts/wallet';
@@ -27,11 +26,5 @@ export const WalletConnect = () => {
     );
   }
 
-  if (selectedWallet) {
-    return (
-      <Connecting selectedWallet={selectedWallet} clearSelectedWallet={() => walletStore.setSelectedWallet(null)} />
-    );
-  }
-
-  return <SelectWallet setSelectedWallet={walletStore.setSelectedWallet} />;
+  return <SelectWallet />;
 };
