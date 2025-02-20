@@ -3,7 +3,7 @@ use axum::{
     extract::State,
     response::{IntoResponse, Response},
     Json,
-    http::{StatusCode, HeaderMap, header},
+    http::{StatusCode, HeaderMap},
 };
 use prism_prover::Prover;
 use serde_json::json;
@@ -12,8 +12,6 @@ use crate::api::dto::response::auth_res::AuthWalletResponseDto;
 use crate::services::auth_service::AuthService;
 use crate::services::user_service::UserService;
 use crate::utils::jwt::{create_access_token, create_refresh_token, decode_token, TokenType};
-use axum::extract::TypedHeader;
-use headers::Cookie;
 use chrono::Utc;
 
 pub async fn auth_wallet(
@@ -36,48 +34,47 @@ pub async fn auth_wallet(
                 Err(e) => return e.into_response(),
             };
 
-            let mut headers = HeaderMap::new();
-            // Set refresh token (httpOnly, secure)
-            headers.insert(
-                header::SET_COOKIE,
-                format!(
-                    "refresh_token={}; HttpOnly; Path=/; Max-Age=604800; SameSite=Strict",
-                    refresh_token
-                ).parse().unwrap()
-            );
-            // Set access token (JavaScript accessible)
-            headers.insert(
-                header::SET_COOKIE,
-                format!(
-                    "access_token={}; Path=/; Max-Age=900; SameSite=Strict",
-                    access_token
-                ).parse().unwrap()
-            );
-
             (
                 StatusCode::OK,
-                headers,
-                Json(AuthWalletResponseDto { success: true })
+                Json(AuthWalletResponseDto {
+                    success: true,
+                    message: Some("Successfully logged in".to_string()),
+                    access_token,
+                    refresh_token,
+                })
             ).into_response()
         },
         Err(e) => e.into_response(),
     }
 }
 
-pub async fn refresh_tokens(
-    TypedHeader(cookies): TypedHeader<Cookie>,
-) -> Response {
-    // Get refresh token from cookies
-    let refresh_token = match cookies.get("refresh_token") {
-        Some(token) => token,
+pub async fn refresh_tokens(headers: HeaderMap) -> Response {
+    let refresh_token = match headers.get("Authorization") {
+        Some(auth_header) => {
+            let auth_str = auth_header.to_str().unwrap_or("");
+            if auth_str.starts_with("Bearer ") {
+                auth_str[7..].to_string()
+            } else {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(json!({
+                        "success": false,
+                        "message": "Invalid authorization header format"
+                    }))
+                ).into_response();
+            }
+        },
         None => return (
             StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "No refresh token provided" }))
+            Json(json!({
+                "success": false,
+                "message": "No refresh token provided"
+            }))
         ).into_response(),
     };
 
     // Verify refresh token and get claims
-    let claims = match decode_token(refresh_token.to_string()) {
+    let claims = match decode_token(refresh_token) {
         Ok(claims) => claims,
         Err(_) => return (
             StatusCode::UNAUTHORIZED,
@@ -119,29 +116,45 @@ pub async fn refresh_tokens(
         Err(e) => return e.into_response(),
     };
 
-    // Create headers for new tokens
-    let mut headers = HeaderMap::new();
-    // Set refresh token
-    headers.insert(
-        header::SET_COOKIE,
-        format!(
-            "refresh_token={}; HttpOnly; Path=/; Max-Age=604800; SameSite=Strict",
-            new_refresh_token
-        ).parse().unwrap()
-    );
-    // Set access token
-    headers.insert(
-        header::SET_COOKIE,
-        format!(
-            "access_token={}; Path=/; Max-Age=900; SameSite=Strict",
-            new_access_token
-        ).parse().unwrap()
-    );
-
-    // Return success response
     (
         StatusCode::OK,
-        headers,
-        Json(AuthWalletResponseDto { success: true })
+        Json(json!({
+            "success": true,
+            "message": "Tokens refreshed successfully",
+            "accessToken": new_access_token,
+            "refreshToken": new_refresh_token
+        }))
+    ).into_response()
+}
+
+pub async fn logout(headers: HeaderMap) -> Response {
+    match headers.get("Authorization") {
+        Some(auth_header) => {
+            let auth_str = auth_header.to_str().unwrap_or("");
+            if !auth_str.starts_with("Bearer ") {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(json!({
+                        "success": false,
+                        "message": "Invalid authorization header format"
+                    }))
+                ).into_response();
+            }
+        },
+        None => return (
+            StatusCode::UNAUTHORIZED,
+            Json(json!({
+                "success": false,
+                "message": "No token provided"
+            }))
+        ).into_response(),
+    };
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "success": true,
+            "message": "Successfully logged out"
+        }))
     ).into_response()
 }

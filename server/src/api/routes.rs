@@ -16,7 +16,7 @@ use http::{
 use crate::middleware::auth::auth_middleware;
 use crate::api::handlers::proof::add_proof;
 use crate::api::handlers::user::get_user;
-use crate::api::handlers::auth::{auth_wallet, refresh_tokens};
+use crate::api::handlers::auth::{auth_wallet, refresh_tokens, logout};
 
 pub fn create_router(prover: Arc<Prover>) -> Router {
     let cors = CorsLayer::new()
@@ -32,7 +32,8 @@ pub fn create_router(prover: Arc<Prover>) -> Router {
 
     let public_routes = Router::new()
         .route("/auth", post(auth_wallet))
-        .route("/refresh", post(refresh_tokens));
+        .route("/auth/refresh", post(refresh_tokens))
+        .route("/auth/logout", post(logout));
 
     let protected_routes = Router::new()
         .route("/proof", post(add_proof))
