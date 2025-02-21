@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Button, Modal, ModalBody, ModalContent, ModalHeader, addToast } from '@heroui/react';
+import { useNavigate } from '@tanstack/react-router';
 
 import Logo from '@/assets/Logo.svg?react';
 import { useChainStore, useWalletStore } from '@/contexts';
@@ -13,6 +14,7 @@ export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   const { selectedWallet } = useWalletStore();
   const { selectedChain } = useChainStore();
   const { client, status } = useWalletClient(selectedWallet?.walletName);
+  const navigate = useNavigate();
 
   const signIn = useAsyncExecutor(async () => {
     try {
@@ -57,6 +59,8 @@ export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         timeout: 3000,
         priority: 0,
       });
+
+      navigate({ to: '/dashboard' });
     } catch (error) {
       addToast({
         title: 'Error',
