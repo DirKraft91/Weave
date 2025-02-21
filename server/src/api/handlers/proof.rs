@@ -4,8 +4,9 @@ use axum::{
     Json,
     extract::{Extension, State},
 };
+use serde_json::json;
 use crate::{api::dto::request::proof_req::ApplyProofRequestDto, entities::account::Proof, services::proof_service::ReclaimProofValidator, utils::common::get_current_time};
-use crate::api::dto::response::proof_res::ApplyProofResponseDto;
+use crate::api::dto::response::proof_res::{ApplyProofResponseDto, ProofStatsResponseDto};
 use crate::services::proof_service::ProofService;
 use crate::services::user_service::UserService;
 use crate::domain::models::auth::JwtUserPayload;
@@ -77,5 +78,24 @@ pub async fn add_proof(
             (AxumHttp::StatusCode::OK, AxumJson(ApplyProofResponseDto { success: true })).into_response()
         },
         Err(e) => e.into_response(),
+    }
+}
+
+
+pub async fn get_proof_stats(
+    State(state): State<AppState>,
+    Extension(jwt_user_payload): Extension<JwtUserPayload>,
+) -> impl IntoResponse {
+    let account_repo = state.account_repo;
+    
+    match account_repo.get_proof_stats_by_provider() {
+        Ok(stats) => (
+            AxumHttp::StatusCode::OK,
+            AxumJson(ProofStatsResponseDto { stats }),
+        ).into_response(),
+        Err(err) => (
+            AxumHttp::StatusCode::INTERNAL_SERVER_ERROR,
+            AxumJson(json!({ "error": err.to_string() })),
+        ).into_response(),
     }
 }

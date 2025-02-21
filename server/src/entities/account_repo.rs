@@ -60,5 +60,18 @@ impl AccountRepo {
             .load::<Proof>(&mut *conn) // Use &mut *conn
             .map_err(|e| e.into())
     }
+
+    pub fn get_proof_stats_by_provider(&self) -> Result<Vec<(String, i64)>> {
+        use diesel::dsl::*;
+        use diesel::prelude::*;
+    
+        let mut conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Failed to lock DB connection: {}", e))?;
+        
+        proofs::table
+            .group_by(proofs::provider) // Ensure provider is grouped
+            .select((proofs::provider, count(proofs::proof_identifier))) // Select provider and count of proofs
+            .load::<(String, i64)>(&mut *conn) // Execute query
+            .map_err(|e| e.into())
+    }
     
 }

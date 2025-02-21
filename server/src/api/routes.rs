@@ -14,8 +14,8 @@ use http::{
     HeaderValue,
 };
 use crate::middleware::auth::auth_middleware;
-use crate::api::handlers::proof::add_proof;
-use crate::api::handlers::user::get_user;
+use crate::api::handlers::proof::{add_proof, get_proof_stats};
+use crate::api::handlers::user::{get_user, get_me};
 use crate::api::handlers::auth::{auth_wallet, refresh_tokens, logout};
 
 use super::handlers::auth::AppState;
@@ -39,7 +39,9 @@ pub fn create_router(state: AppState) -> Router {
 
     let protected_routes = Router::new()
         .route("/proof", post(add_proof))
-        .route("/get-account", get(get_user))
+        .route("/proof-stats", post(get_proof_stats))
+        .route("/me", get(get_me))
+        .route("/user/:user_id", get(get_user))
         .layer(middleware::from_fn(auth_middleware));
 
     Router::new()
