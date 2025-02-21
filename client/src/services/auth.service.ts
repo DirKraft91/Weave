@@ -72,16 +72,16 @@ class AuthService {
         };
       }
 
-      if (data.accessToken && data.refreshToken) {
-        this.setTokens(data.accessToken, data.refreshToken);
+      if (data.access_token && data.refresh_token) {
+        this.setTokens(data.access_token, data.refresh_token);
       }
 
       return {
         success: data.success ?? true,
         message: data.message || 'Successfully logged in',
         data: {
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
         },
       };
     } catch (error) {

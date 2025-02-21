@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Modal, ModalContent, ModalHeader, ModalBody, Button, addToast } from '@heroui/react';
+import { Button, Modal, ModalBody, ModalContent, ModalHeader, addToast } from '@heroui/react';
 
-import { useChainStore, useWalletStore } from '@/contexts';
-import { authService } from '@/services/auth.service';
 import Logo from '@/assets/Logo.svg?react';
-import Icon from './assets/Icon.png';
-import { useWalletClient } from '@cosmos-kit/react';
+import { useChainStore, useWalletStore } from '@/contexts';
+import { authStore } from '@/contexts/auth';
 import { useAsyncExecutor } from '@/hooks/useAsyncExecutor';
+import { authService } from '@/services/auth.service';
+import { useWalletClient } from '@cosmos-kit/react';
+import Icon from './assets/Icon.png';
 
 export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { selectedWallet } = useWalletStore();
@@ -42,6 +43,12 @@ export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       if (!response.success) {
         throw new Error(response.message || 'Authentication failed');
       }
+
+      if (response.data?.accessToken) {
+        authStore.setAuthToken(response.data.accessToken);
+      }
+
+      onClose();
 
       addToast({
         title: 'Success',

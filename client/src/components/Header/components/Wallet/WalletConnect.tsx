@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
 import { useChain } from '@cosmos-kit/react';
+import { useEffect } from 'react';
 
+import { wallets } from '@/config/wallets';
 import { useChainStore } from '@/contexts';
+import { authStore } from '@/contexts/auth';
+import { useWalletStore, walletStore } from '@/contexts/wallet';
+import { authService } from '@/services/auth.service';
 import { Connected } from './Connected';
 import { SelectWallet } from './SelectWallet';
-import { wallets } from '@/config/wallets';
-import { useWalletStore, walletStore } from '@/contexts/wallet';
 
 export const WalletConnect = () => {
   const { selectedChain } = useChainStore();
@@ -20,9 +22,18 @@ export const WalletConnect = () => {
     }
   }, [chainWallet?.isWalletConnected]);
 
+  const handleDisconnect = async () => {
+    await authService.logout();
+    authStore.clearAuthToken();
+    walletStore.setSelectedWallet(null);
+  };
+
   if (selectedWallet && selectedWallet.isWalletConnected) {
     return (
-      <Connected selectedWallet={selectedWallet} clearSelectedWallet={() => walletStore.setSelectedWallet(null)} />
+      <Connected
+        selectedWallet={selectedWallet}
+        clearSelectedWallet={handleDisconnect}
+      />
     );
   }
 
