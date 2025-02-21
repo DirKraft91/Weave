@@ -20,7 +20,7 @@ export const Connected = ({
   if (!address) return null;
 
   return (
-    <Dropdown backdrop="blur" placement="bottom-end">
+    <Dropdown backdrop="transparent" placement="bottom-end">
       <DropdownTrigger>
         <Button color="secondary" variant="solid">
           {walletInfo && (

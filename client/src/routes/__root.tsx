@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChainProvider } from '@cosmos-kit/react';
 import { chains, assets } from 'chain-registry';
 import { wallets } from '../config/wallets';
+import { Background } from '@/components/Background';
 
 const queryClient = new QueryClient();
 
@@ -20,7 +21,10 @@ export const Route = createRootRoute({
         assetLists={assets}
         wallets={wallets}
       >
-        <Outlet />
+        <Background />
+        <div className="relative z-1">
+          <Outlet />
+        </div>
         <TanStackRouterDevtools />
       </ChainProvider>
     </QueryClientProvider>

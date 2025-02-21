@@ -24,6 +24,13 @@ declare module '@tanstack/react-router' {
 createRoot(document.getElementById('root')!).render(
   <HeroUIProvider>
     <RouterProvider router={router} />
-    <ToastProvider maxVisibleToasts={3} placement="top-right" />
+    <ToastProvider
+      maxVisibleToasts={1}
+      toastOffset={20}
+      placement="bottom-right"
+      toastProps={{
+        hideCloseButton: true,
+      }}
+    />
   </HeroUIProvider>,
 );

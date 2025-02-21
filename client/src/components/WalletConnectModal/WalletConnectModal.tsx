@@ -1,20 +1,70 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { MainWalletBase, WalletStatus } from '@cosmos-kit/core';
+import { ChainWalletBase, MainWalletBase, WalletStatus } from '@cosmos-kit/core';
 import { Keplr } from '@keplr-wallet/types';
-import { Modal, ModalContent, ModalHeader, ModalBody, Button, addToast } from '@heroui/react';
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  Button,
+  addToast,
+  closeAll as closeAllToasts,
+} from '@heroui/react';
 
 import { wallets } from '@/config/wallets';
 import { getWalletLogo } from '@/utils/common';
 import { makeKeplrChainInfo } from '@/utils/faucet';
-import { useChainStore, useWalletStore, walletStore } from '@/contexts';
+import { useChainStore, walletStore } from '@/contexts';
 import Logo from '@/assets/Logo.svg?react';
 import Icon from './assets/Icon.png';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export const WalletConnectModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { selectedChain } = useChainStore();
-  const { selectedWallet } = useWalletStore();
   const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleWalletStatus = (wallet: ChainWalletBase) => {
+    closeAllToasts();
+    if (wallet.walletStatus === WalletStatus.Error) {
+      addToast({
+        title: 'Error',
+        description: 'Failed to connect to wallet',
+        color: 'danger',
+        timeout: 3000,
+        priority: 1,
+      });
+    }
+
+    if (wallet.walletStatus === WalletStatus.NotExist) {
+      addToast({
+        title: 'Error',
+        description: 'Wallet not installed',
+        color: 'danger',
+        timeout: 3000,
+        priority: 2,
+      });
+    }
+
+    if (wallet.walletStatus === WalletStatus.Rejected) {
+      addToast({
+        title: 'Rejected',
+        description: 'Connection rejected',
+        color: 'danger',
+        timeout: 3000,
+        priority: 0,
+      });
+    }
+
+    if (wallet.walletStatus === WalletStatus.Connected) {
+      addToast({
+        title: 'Connected',
+        description: 'Connected to wallet',
+        color: 'success',
+        timeout: 3000,
+        priority: 0,
+      });
+    }
+  };
 
   const handleSelectWallet = (wallet: MainWalletBase) => async () => {
     try {
@@ -30,69 +80,17 @@ export const WalletConnectModal = ({ isOpen, onClose }: { isOpen: boolean; onClo
         await (chainWallet.client?.client as Keplr).experimentalSuggestChain(chainInfo);
       }
       await chainWallet.connect();
+      handleWalletStatus(chainWallet);
       walletStore.setSelectedWallet(chainWallet);
+      if (chainWallet.walletStatus === WalletStatus.Connected) {
+        onClose();
+      }
     } catch (error) {
       console.error(error);
     } finally {
       setIsConnecting(false);
     }
   };
-
-  useEffect(() => {
-    if (!selectedWallet) return;
-
-    if (selectedWallet.walletStatus === WalletStatus.Error) {
-      addToast({
-        title: 'Error',
-        description: 'Failed to connect to wallet',
-        color: 'danger',
-        timeout: 3000,
-        priority: 0,
-      });
-    }
-
-    if (selectedWallet.walletStatus === WalletStatus.NotExist) {
-      addToast({
-        title: 'Error',
-        description: 'Wallet not installed',
-        color: 'danger',
-        timeout: 3000,
-        priority: 0,
-      });
-    }
-
-    if (selectedWallet.walletStatus === WalletStatus.Connecting) {
-      addToast({
-        title: 'Connecting...',
-        description: 'Please wait while we connect to the wallet',
-        color: 'secondary',
-        timeout: 3000,
-        priority: 1,
-      });
-    }
-
-    if (selectedWallet.walletStatus === WalletStatus.Rejected) {
-      addToast({
-        title: 'Rejected',
-        description: 'Connection rejected',
-        color: 'danger',
-        timeout: 3000,
-        priority: 0,
-        onClose: () => {},
-      });
-    }
-
-    if (selectedWallet.walletStatus === WalletStatus.Connected) {
-      addToast({
-        title: 'Connected',
-        description: 'Connected to wallet',
-        color: 'success',
-        timeout: 3000,
-        priority: 0,
-      });
-      onClose();
-    }
-  }, [selectedWallet?.walletStatus]);
 
   return (
     <>
