@@ -1,10 +1,10 @@
+import { Background } from '@/components/Background';
+import { ChainProvider } from '@cosmos-kit/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ChainProvider } from '@cosmos-kit/react';
-import { chains, assets } from 'chain-registry';
+import { assets, chains } from 'chain-registry';
 import { wallets } from '../config/wallets';
-import { Background } from '@/components/Background';
 
 const queryClient = new QueryClient();
 
