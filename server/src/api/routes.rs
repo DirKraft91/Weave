@@ -18,7 +18,9 @@ use crate::api::handlers::proof::add_proof;
 use crate::api::handlers::user::get_user;
 use crate::api::handlers::auth::{auth_wallet, refresh_tokens, logout};
 
-pub fn create_router(prover: Arc<Prover>) -> Router {
+use super::handlers::auth::AppState;
+
+pub fn create_router(state: AppState) -> Router {
     let cors = CorsLayer::new()
         .allow_origin([
             "http://localhost:5173". parse::<HeaderValue>().unwrap(),
@@ -44,5 +46,5 @@ pub fn create_router(prover: Arc<Prover>) -> Router {
         .merge(public_routes)
         .merge(protected_routes)
         .layer(cors)
-        .with_state(prover)
+        .with_state(state)
 }

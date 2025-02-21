@@ -38,7 +38,7 @@ impl ProofValidator for ReclaimProofValidator {
 
 impl<V: ProofValidator> ProofService<V> {
     fn prepare_identity_record(&self) -> Result<IdentityRecord, ProofError> {
-        match self.provider {
+        match &self.provider {
             IdentityProvider::X => {
                 let context: Value = serde_json::from_str(&self.data.claim_data.context)
                 .map_err(ProofError::ContextDeserializationError)?;
@@ -104,7 +104,7 @@ impl<V: ProofValidator> ProofService<V> {
                     self.provider.to_string()
                 )))
             },
-            IdentityProvider::Other => {
+            IdentityProvider::Other(name) => {
                 Ok(IdentityRecord::Generic(GenericProviderIdentityRecord::new(
                     self.data.clone(),
                     Utc::now().timestamp(),

@@ -1,12 +1,12 @@
-# Project Name 
+# Project Name
 
 Weave - Social accounts on Prism
 
-## Overview  
+## Overview
 
 ---
 
-## Folder Structure  
+## Folder Structure
 
 ```
 root/
@@ -24,62 +24,88 @@ root/
 
 ---
 
-## Prerequisites  
+## Prerequisites
 
-Ensure the following tools are installed:  
-- **Node.js** (for the frontend)  
-- **yarn** (for managing frontend dependencies)  
-- **Rust** (for the backend, using Cargo as the package manager)  
+Ensure the following tools are installed:
 
----
-
-## Installation  
-
-### 1. Clone the repository  
-
-```bash  
-git clone <repository_url>  
-cd <repository_name>  
-```  
-
-### 2. Install Dependencies  
-
-#### Frontend (Client)  
-
-Navigate to the `client` directory:  
-
-```bash  
-cd client  
-yarn install  
-```  
-
-#### Backend (Server)  
-
-Navigate to the `server` directory:  
-
-```bash  
-cd server  
-cargo build  
-```  
+- **Node.js** (for the frontend)
+- **yarn** (for managing frontend dependencies)
+- **Rust** (for the backend, using Cargo as the package manager)
 
 ---
 
-## Running the Application  
+## Installation
 
-### Start the Frontend  
+### 1. Clone the repository
 
-From the `client` directory:  
+```bash
+git clone <repository_url>
+cd <repository_name>
+```
 
-```bash  
-yarn run dev  
-```  
+### 2. Install Dependencies
 
-This will start the Vite development server, typically available at `http://localhost:5173`.  
+#### Frontend (Client)
+
+Navigate to the `client` directory:
+
+```bash
+cd client
+yarn install
+```
+
+#### Backend (Server)
+
+Navigate to the `server` directory:
+
+```bash
+cd server
+cargo build
+```
+
+---
+
+## Running the Application
+
+### Start the Frontend
+
+From the `client` directory:
+
+```bash
+yarn run dev
+```
+
+This will start the Vite development server, typically available at `http://localhost:5173`.
 
 ### Start the Backend
 
 From the `server` directory:
 
-```bash  
+```bash
 cargo run
 ```
+
+working with mysql BD
+
+install locally
+`brew install mysql@8.0`
+
+update path
+`vim ~/.zshrc`
+add path to the file
+`export PATH="$(brew --prefix mysql-client)/bin:$PATH"`
+
+install diesel cli
+`cargo install diesel_cli --no-default-features --features mysql`
+
+diesel setup
+
+`diesel setup`
+
+run migrations
+
+`diesel migration run`
+
+if you need a new migraiton
+
+`diesel migration generate migraiton_name`

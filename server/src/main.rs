@@ -1,18 +1,34 @@
 mod middleware;
 mod api;
+mod entities;
 mod domain;
 mod utils;
 mod prover;
+mod schema;
 mod services;
 use anyhow::Result;
+use api::handlers::auth::AppState;
+use diesel::MysqlConnection;
+use diesel::Connection;
+use entities::account_repo::AccountRepo;
+use entities::account::{Account};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::spawn;
 use dotenv::dotenv;
+use std::env;
 
 pub static SERVICE_ID: &str = "weave_service";
+
+fn establish_connection() -> MysqlConnection {
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    MysqlConnection::establish(&database_url).expect("Error connecting to database")
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv().ok();
+    let conn = establish_connection();
+    let repo = AccountRepo::new(conn);
 
     std::env::set_var(
             "RUST_LOG",
@@ -22,6 +38,10 @@ async fn main() -> Result<()> {
 
     let prover = prover::create_prover_server();
     let prover_clone = prover.clone();
+    let state = AppState{
+        prover: prover_clone,
+        account_repo: repo,
+    };
     
 
     tokio::select! {
@@ -33,7 +53,7 @@ async fn main() -> Result<()> {
             println!("Prover runner task completed");
         }
         _ = spawn(async move {
-            if let Err(e) = api::server::start_server(prover_clone).await {
+            if let Err(e) = api::server::start_server(state).await {
                 log::error!("Error occurred while running API server: {:?}", e);
             }
         }) => {

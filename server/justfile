@@ -1,21 +1,24 @@
+# Define the path to your docker-compose.yml file
 DOCKER_COMPOSE_FILE := "ci/docker-compose.yml"
 
-install:
-    #!/usr/bin/env bash
-    set -euo pipefail
+# Helper function to use correct docker compose command
+docker_compose_cmd := if `uname -s` == "Linux" { "docker compose" } else { "docker-compose" }
 
-    cargo install --path .
-
+# Check if running as root by examining the effective user ID
+is_root := if `id -u` == "0" { "true" } else { "false" }
 
 celestia-up:
   #!/usr/bin/env bash
   set -euo pipefail
 
   echo "Cleaning up any existing Docker resources..."
-  docker-compose -f {{DOCKER_COMPOSE_FILE}} down -v --remove-orphans
+  {{docker_compose_cmd}} -f {{DOCKER_COMPOSE_FILE}} down -v --remove-orphans
+
+  echo "Building Docker images..."
+  {{docker_compose_cmd}} -f {{DOCKER_COMPOSE_FILE}} build
 
   echo "Spinning up a fresh Docker Compose stack..."
-  docker-compose -f {{DOCKER_COMPOSE_FILE}} up -d --force-recreate --renew-anon-volumes
+  {{docker_compose_cmd}} -f {{DOCKER_COMPOSE_FILE}} up -d --force-recreate --renew-anon-volumes
 
   echo "Waiting for services to be ready..."
   timeout=120
@@ -24,7 +27,7 @@ celestia-up:
   bridge_node_ready=false
 
   while true; do
-    logs=$(docker-compose -f {{DOCKER_COMPOSE_FILE}} logs)
+    logs=$( {{docker_compose_cmd}} -f {{DOCKER_COMPOSE_FILE}} logs )
 
     if [[ $logs == *"Configuration finished. Running a light node"* ]]; then
       light_node_ready=true
@@ -46,7 +49,7 @@ celestia-up:
 
     if [ $elapsed -ge $timeout ]; then
       echo "Timeout waiting for services to be ready. Check the logs for more information."
-      docker-compose -f {{DOCKER_COMPOSE_FILE}} logs
+      {{docker_compose_cmd}} -f {{DOCKER_COMPOSE_FILE}} logs
       exit 1
     fi
 
@@ -54,11 +57,119 @@ celestia-up:
     sleep 5
   done
 
-
   echo "Celestia stack is up and running!"
 
 celestia-down:
-  docker-compose -f {{DOCKER_COMPOSE_FILE}} down -v --remove-orphans
+  {{docker_compose_cmd}} -f {{DOCKER_COMPOSE_FILE}} down -v --remove-orphans
 
 celestia-logs:
-  docker-compose -f {{DOCKER_COMPOSE_FILE}} logs -f
+  {{docker_compose_cmd}} -f {{DOCKER_COMPOSE_FILE}} logs -f
+
+# Command to run integration tests with a fresh Docker setup
+integration-test:
+  #!/usr/bin/env bash
+  set -euo pipefail
+
+  for curve in ed25519 secp256k1 secp256r1; do
+    just celestia-up
+
+    cargo test -p prism-tests --lib --release --features mock_prover
+
+    just celestia-down
+  done
+
+check:
+  @echo "Running cargo udeps..."
+  cargo +nightly udeps --all-features --all-targets
+  @echo "Running clippy..."
+  cargo clippy --all --all-targets -- -D warnings
+
+build:
+  @echo "Building the project..."
+  cargo build --release
+
+unit-test:
+  @echo "Running unit tests..."
+  cargo test --lib --release --features "mock_prover" -- --skip test_light_client_prover_talking
+
+coverage:
+  #!/usr/bin/env bash
+  set -euo pipefail
+
+  just celestia-up
+
+  echo "Generating coverage report..."
+  if ! cargo llvm-cov nextest --html --output-dir coverage_report --lib --features "mock_prover" --release --workspace --exclude prism-cli --exclude-from-report prism-sp1 --ignore-filename-regex sp1; then
+    echo "Coverage report generation failed."
+  else
+    echo "Coverage report generated in 'coverage_report' directory"
+  fi
+
+  just celestia-down
+
+install-deps:
+  #!/usr/bin/env bash
+  set -euo pipefail
+
+  echo "Installing project dependencies..."
+
+  unameOut="$(uname -s)" && \
+  case "${unameOut}" in \
+    Linux*)     OS=Linux ;; \
+    Darwin*)    OS=Mac ;; \
+    *)          OS="UNKNOWN:${unameOut}" ;; \
+  esac
+
+  if [ "$OS" = "UNKNOWN:${unameOut}" ]; then \
+    echo "Unsupported operating system. This script only supports Linux and macOS. Please install dependencies manually."; \
+    exit 1; \
+  fi
+
+  # On Linux, ensure essential packages are installed
+  if [ "$OS" = "Linux" ]; then \
+    for package in build-essential pkg-config libssl-dev libclang-dev libfontconfig1-dev clang; do \
+      if ! dpkg -s $package > /dev/null 2>&1; then \
+        echo "Installing $package..."; \
+        if {{is_root}}; then \
+          apt update; \
+          apt install $package -y; \
+        else \
+          sudo apt update; \
+          sudo apt install $package -y; \
+        fi; \
+      else \
+        echo "$package is already installed."; \
+      fi; \
+    done; \
+  fi
+
+  if ! cargo prove --version > /dev/null 2>&1; then \
+    echo "Installing SP1..."
+    curl -L https://sp1.succinct.xyz | bash; \
+    source ~/.bashrc || source ~/.bash_profile || source ~/.zshrc; \
+
+    echo "Running sp1up to install SP1 toolchain..."
+    sp1up
+
+    if cargo prove --version > /dev/null 2>&1; then \
+      echo "SP1 installation successful!"; \
+      cargo prove --version; \
+    else \
+      echo "SP1 installation may have failed. Please check and install manually if needed."; \
+    fi
+  else \
+    echo "SP1 is already installed."; \
+  fi
+
+  for tool in cargo-udeps cargo-llvm-cov cargo-nextest; do \
+    if ! command -v $tool > /dev/null; then \
+      echo "Installing $tool..."; \
+      cargo install $tool; \
+    else \
+      echo "$tool is already installed."; \
+    fi; \
+  done
+
+  source ~/.bashrc || source ~/.bash_profile || source ~/.zshrc
+
+  echo "All dependencies installed successfully!"

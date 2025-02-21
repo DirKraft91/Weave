@@ -32,3 +32,5 @@ prism-da = { git = "https://github.com/deltadevsde/prism", branch = "main" }
 keystore-rs = { version = "0.3" }
 headers = "0.3"
 async-trait = "0.1"
+diesel = { version = "2.1", features = ["mysql"] }
+bincode = "1.3"

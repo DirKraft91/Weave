@@ -12,3 +12,12 @@ logs:
 
 ps:
 	docker-compose ps
+
+up-migraitons:
+	diesel migration run
+
+down-migraitons:
+	diesel migration redo
+
+new-migraiton:
+	diesel migration generate migraiton_name
