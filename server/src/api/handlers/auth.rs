@@ -7,7 +7,7 @@ use axum::{
 };
 use prism_prover::Prover;
 use serde_json::json;
-use crate::{api::dto::request::auth_req::AuthWalletRequestDto, entities::{account::Account as AccountEntity, account_repo::AccountRepo}, utils::common::get_current_time};
+use crate::{api::dto::request::auth_req::AuthWalletRequestDto, domain::models::user::UserAminoSignedRecord, entities::{account::Account as AccountEntity, account_repo::AccountRepo}, utils::common::get_current_time};
 use crate::api::dto::response::auth_res::AuthWalletResponseDto;
 use crate::services::auth_service::AuthService;
 use crate::services::user_service::UserService;
@@ -24,11 +24,23 @@ pub async fn auth_wallet(
     State(state): State<AppState>,
     Json(body): Json<AuthWalletRequestDto>
 ) -> Response {
-    if let Err(e) = AuthService::verify_wallet_signature(&body) {
-        return e.into_response();
-    }
+    // if let Err(e) = AuthService::verify_wallet_signature(&body) {
+    //     return e.into_response();
+    // }
 
-    match UserService::new(state.prover, body.signer.clone()).create_user_account(body.signer.clone()).await {
+    let user_amino_signed_record = UserAminoSignedRecord::new(
+        body.public_key.clone(), 
+        body.signature.clone(), body.signer.clone(), 
+        body.message.clone()
+    );
+    let user_record = user_amino_signed_record.to_user_record();
+    let user_service = UserService::new(state.prover, body.signer.clone());
+
+    match user_service.create_user_account(
+        user_record.user_id, 
+        user_record.signature_bundle.verifying_key, 
+        user_record.signature_bundle.signature
+    ).await {
         Ok(_) => {
             // Get the current timestamp safely
             let created_at = get_current_time();

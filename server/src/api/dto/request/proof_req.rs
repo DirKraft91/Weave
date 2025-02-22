@@ -5,7 +5,10 @@ use crate::domain::models::proof::IdentityProvider;
 
 #[derive(Deserialize, Serialize)]
 pub struct ApplyProofRequestDto {
-    pub proof: ReclaimProof,
+    pub public_key: String,
+    pub signature: String,
+    pub signer: String,
+    pub data: ReclaimProof,
     #[serde(rename = "provider")]
     pub provider: IdentityProvider,
 }
