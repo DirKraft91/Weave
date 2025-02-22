@@ -1,5 +1,4 @@
 import { AsideNavigation } from '@/components/AsideNavigation';
-import { DashboardBackground } from '@/components/Background/DashboardBackground';
 import { Header } from '@/components/Header';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 
@@ -11,7 +10,6 @@ export const Route = createFileRoute('/_authenticated')({
 function AuthenticatedLayout() {
   return (
     <div className="min-h-screen flex flex-col">
-      <DashboardBackground />
       <Header />
       <div className="flex flex-1 gap-8 container mx-auto">
         <aside className="w-64 flex">
