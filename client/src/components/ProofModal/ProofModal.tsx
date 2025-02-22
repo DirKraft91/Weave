@@ -32,7 +32,7 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
   });
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal backdrop="blur" isOpen={isOpen} onClose={onClose}>
       <ModalContent className="bg-secondary">
         <ModalBody>
           {requestUrl && (
