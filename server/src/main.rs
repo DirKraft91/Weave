@@ -11,8 +11,6 @@ use api::handlers::auth::AppState;
 use diesel::MysqlConnection;
 use diesel::Connection;
 use entities::account_repo::AccountRepo;
-use entities::account::{Account};
-use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::spawn;
 use dotenv::dotenv;
 use std::env;

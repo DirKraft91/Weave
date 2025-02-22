@@ -49,9 +49,10 @@ async fn register_service(prover: Arc<Prover>) -> Result<()> {
 pub fn create_prover_server() -> Arc<Prover> {
     let db = InMemoryDatabase::new();
     let (da_layer, _, _) = InMemoryDataAvailabilityLayer::new(5);
-    let keystore_sk = KeyChain
-        .get_signing_key(SERVICE_ID)
-        .map_err(|e| anyhow!("Error getting key from store: {}", e))?;
+    let keystore_sk = match KeyChain.get_or_create_signing_key(SERVICE_ID) {
+        Ok(sk) => sk,
+        Err(e) => panic!("Error getting key from keychain: {}", e),
+    };
     let sk = SigningKey::Ed25519(Box::new(keystore_sk.clone()));
     let cfg = Config {
         prover: true,

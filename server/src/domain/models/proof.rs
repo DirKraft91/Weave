@@ -1,8 +1,8 @@
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use reclaim_rust_sdk::Proof as ReclaimProof;
 use std::collections::HashMap;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum IdentityProvider {
     X,

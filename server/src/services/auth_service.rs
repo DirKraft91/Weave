@@ -34,7 +34,7 @@ impl AuthService {
         let signature = ecdsa::Signature::from_str(&rpc_signature_to_compare)
             .map_err(|e| AuthError::SignatureError(e.to_string()))?;
 
-        let message = generate_amino_message(&payload.signer, &base64::encode(&payload.message));
+        let message = generate_amino_message(&payload.signer, &base64::encode(&payload.data));
         let digest = Sha256::new_with_prefix(message.as_str());
 
         let pk = PublicKey::from_raw_secp256k1(
