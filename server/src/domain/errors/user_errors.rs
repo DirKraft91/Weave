@@ -1,5 +1,5 @@
 use thiserror::Error;
-use prism_client::PrismApiError;
+use prism_client::{PrismApiError, TransactionError};
 
 #[derive(Debug, Error)]
 pub enum UserError {
@@ -8,6 +8,9 @@ pub enum UserError {
 
     #[error("Key store error: {0}")]
     KeyStoreError(String),
+
+    #[error("Signature error: {0}")]
+    SignatureError(String),
 
     #[error("Transaction error: {0}")]
     TransactionError(String),
@@ -20,7 +23,8 @@ impl axum::response::IntoResponse for UserError {
                 axum::http::StatusCode::NOT_FOUND,
                 self.to_string(),
             ),
-            UserError::KeyStoreError(_) => (
+            UserError::KeyStoreError(_) |
+            UserError::SignatureError(_) => (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 self.to_string(),
             ),
@@ -46,6 +50,12 @@ impl From<anyhow::Error> for UserError {
 
 impl From<PrismApiError> for UserError {
     fn from(error: PrismApiError) -> Self {
+        UserError::TransactionError(error.to_string())
+    }
+}
+
+impl From<TransactionError> for UserError {
+    fn from(error: TransactionError) -> Self {
         UserError::TransactionError(error.to_string())
     }
 }
