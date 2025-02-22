@@ -10,6 +10,7 @@ const providers: Provider[] = [
     name: 'X',
     domain: 'x.com',
     icon: FaSquareXTwitter,
+    link: 'https://x.com'
   },
   {
     id: 'google',
@@ -18,18 +19,21 @@ const providers: Provider[] = [
     icon: FcGoogle,
     isVerified: true,
     value: 'Username@gmail.com',
+    link: 'https://gmail.com'
   },
   {
     id: 'linkedin',
     name: 'Linkedin',
     domain: 'linkedin.com',
     icon: FaLinkedin,
+    link: 'https://linkedin.com'
   },
   {
     id: 'github',
     name: 'Github',
     domain: 'github.com',
     icon: FaGithub,
+    link: 'https://github.com'
   },
 ];
 

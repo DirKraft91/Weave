@@ -1,10 +1,13 @@
 import { ArrowRightIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { Button } from '@heroui/react';
+import { Link } from '@tanstack/react-router';
 
 export const AsideNavigation = () => {
   return (
     <div className="flex flex-1 flex-col gap-2 pt-24">
       <Button
+        as={Link}
+        to="/dashboard"
         variant="solid"
         color="secondary"
         className="justify-between"
@@ -15,6 +18,8 @@ export const AsideNavigation = () => {
       </Button>
 
       <Button
+        as={Link}
+        to="/search"
         variant="light"
         color="default"
         className="justify-start gap-2"

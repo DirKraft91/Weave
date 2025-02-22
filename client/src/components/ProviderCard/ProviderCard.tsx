@@ -1,4 +1,5 @@
 import { Button, Card, CardFooter, CardHeader, Divider } from "@heroui/react";
+import { Link } from '@tanstack/react-router';
 import { IconType } from 'react-icons';
 
 export interface Provider {
@@ -9,6 +10,7 @@ export interface Provider {
   isVerified?: boolean;
   value?: string;
   domain?: string;
+  link?: string;
 }
 
 interface ProviderCardProps {
@@ -25,7 +27,12 @@ export function ProviderCard({ provider }: ProviderCardProps) {
           <Icon className="text-5xl" />
           <div className="grid gap-1">
             <span className="text-white font-medium">{provider.name}</span>
-            <span className="text-sm text-content-subtle">{provider.domain}</span>
+            <Link
+              to={provider.link || '#'}
+              className="text-sm text-content-subtle hover:text-content"
+            >
+              {provider.domain}
+            </Link>
           </div>
         </div>
       </CardHeader>
