@@ -34,7 +34,7 @@ impl UserService {
 
         // We retrieve the test service's private key to authorize the account creation.
         let service_keystore = KeyChain
-            .get_signing_key(SERVICE_ID)
+            .get_or_create_signing_key(SERVICE_ID)
             .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
 
         let service_sk = SigningKey::Ed25519(Box::new(service_keystore));
@@ -42,7 +42,7 @@ impl UserService {
         // We retrieve/create the user's keypair to create the account.
         // Note: Obviously, in the real world, the keypair would be handled client side.
         let user_keystore = KeyChain
-            .get_signing_key(&format!("{}/{}", self.user_id.clone(), SERVICE_ID))
+            .get_or_create_signing_key(&format!("{}/{}", self.user_id.clone(), SERVICE_ID))
             .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
         let user_sk = SigningKey::Ed25519(Box::new(user_keystore));
         let user_vk = user_sk.verifying_key();
@@ -88,7 +88,7 @@ impl UserService {
     
         // We retrieve the test service's private key to authorize the account creation.
         let service_keystore = KeyChain
-            .get_signing_key(SERVICE_ID)
+            .get_or_create_signing_key(SERVICE_ID)
             .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
     
         let service_sk = SigningKey::Ed25519(Box::new(service_keystore));
@@ -148,7 +148,7 @@ impl UserService {
         if let Some(account) = self.prover.get_account(&user_record.user_id).await?.account {
             // We retrieve the test service's private key to authorize the account creation.
             let service_keystore = KeyChain
-            .get_signing_key(SERVICE_ID)
+            .get_or_create_signing_key(SERVICE_ID)
             .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
 
             let service_sk = SigningKey::Ed25519(Box::new(service_keystore));

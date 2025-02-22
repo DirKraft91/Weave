@@ -1,14 +1,6 @@
 version: "3.8"
 
 services:
-  weave-server:
-    image: weave-server
-    build: .
-    ports:
-      - "8080:8080"
-    env_file:
-      - .env
-    restart: unless-stopped
   mysql:
     image: mysql:8
     container_name: mysql_container
@@ -18,9 +10,41 @@ services:
       MYSQL_DATABASE: mydatabase
       MYSQL_USER: myuser
       MYSQL_PASSWORD: mypassword
+      MYSQLCLIENT_VERSION: 8.0
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-prootpassword",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  weave-server:
+    image: weave-server
+    build: .
+    working_dir: /usr/src/myapp
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    restart: unless-stopped
+    command: >
+      sh -c "diesel migration run && /usr/local/bin/weave-server serve"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
 volumes:
   mysql_data:

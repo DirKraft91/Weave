@@ -6,6 +6,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
         git \
+        libmariadb-dev-compat \
+        libmariadb-dev \
         && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
@@ -17,17 +19,30 @@ RUN just install-deps
 
 ENV PATH="/root/.sp1/bin:$PATH"
 
-COPY . .
+# Install diesel CLI with MySQL support
+RUN cargo install diesel_cli --no-default-features --features mysql
 
+COPY . .
+COPY .env .env
+COPY migrations /usr/src/myapp/migrations
+
+# Set up database and run migrations
+ENV DATABASE_URL="mysql://myuser:mypassword@mysql:3306/mydatabase"
+
+# Build the Rust app
 RUN just build
 
 EXPOSE 8080
 
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends libssl3 && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libssl3 libmariadb-dev-compat libmariadb-dev && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Copy the compiled app and diesel CLI from the builder
 COPY --from=builder /usr/src/myapp/target/release/weave-server /usr/local/bin/weave-server
+COPY --from=builder /usr/local/cargo/bin/diesel /usr/local/bin/diesel
+# Copy the migrations directory from the builder stage
+COPY --from=builder /usr/src/myapp/migrations /usr/src/myapp/migrations
 
-# Run the server
+# Default command (if not overridden by docker-compose)
 CMD ["/usr/local/bin/weave-server", "serve"]

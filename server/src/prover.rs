@@ -26,7 +26,7 @@ async fn register_service(prover: Arc<Prover>) -> Result<()> {
     // Next we use our keystore crate to get/create a new private key for the service.
     // By default, this is stored in the operating system's keychain.
     let keystore_sk = KeyChain
-        .get_signing_key(SERVICE_ID)
+        .get_or_create_signing_key(SERVICE_ID)
         .map_err(|e| anyhow!("Error getting key from store: {}", e))?;
 
     let sk = SigningKey::Ed25519(Box::new(keystore_sk));
