@@ -7,8 +7,8 @@ edition = "2021"
 axum = { version = "0.6.0", features = ["headers"] }
 dotenv = "0.15"
 reclaim-rust-sdk = "0.1.0"
-serde = "1.0.210"
-serde_json = "1.0.128"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 hex = "0.4.3"
 tokio = { version = "1.40.0", features = ["full", "rt"] }
 log = "0.4.22"
@@ -24,11 +24,10 @@ tendermint = { version =  "0.28.0", features = ["secp256k1"] }
 chrono = "0.4.39"
 jsonwebtoken = "9.2"
 prism-prover = { git = "https://github.com/deltadevsde/prism", branch = "main", features = ["mock_prover"]}
-prism-common = { git = "https://github.com/deltadevsde/prism", branch = "main" }
-prism-tree = { git = "https://github.com/deltadevsde/prism", branch = "main" }
-prism-keys = { git = "https://github.com/deltadevsde/prism", branch = "main" }
 prism-storage = { git = "https://github.com/deltadevsde/prism", branch = "main" }
 prism-da = { git = "https://github.com/deltadevsde/prism", branch = "main" }
+prism-client = { git = "https://github.com/deltadevsde/prism", branch = "main" }
+prism-keys = { git = "https://github.com/deltadevsde/prism", branch = "main" }
 keystore-rs = { version = "0.3" }
 headers = "0.3"
 async-trait = "0.1"

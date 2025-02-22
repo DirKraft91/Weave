@@ -2,43 +2,54 @@ use axum::{
     response::{ IntoResponse, Json as AxumJson },
     http as AxumHttp,
     Json,
-    extract::{Extension, State},
+    extract::State,
 };
 use serde_json::json;
-use crate::{api::dto::request::proof_req::ApplyProofRequestDto, entities::account::Proof, services::proof_service::ReclaimProofValidator, utils::common::get_current_time};
+use crate::{
+    api::dto::request::proof_req::ApplyProofRequestDto, 
+    domain::models::user::UserAminoSignedRecord, 
+    entities::account::Proof, 
+    services::proof_service::ReclaimProofValidator, 
+    utils::common::get_current_time
+};
 use crate::api::dto::response::proof_res::{ApplyProofResponseDto, ProofStatsResponseDto};
 use crate::services::proof_service::ProofService;
 use crate::services::user_service::UserService;
-use crate::domain::models::auth::JwtUserPayload;
 
 use super::auth::AppState;
 
 pub async fn add_proof(
     State(state): State<AppState>,
-    Extension(jwt_user_payload): Extension<JwtUserPayload>,
     Json(payload): Json<ApplyProofRequestDto>,
 ) -> impl IntoResponse {
-    let mut proof_clone = payload.proof.clone();
     let proof_service = ProofService {
-        data: proof_clone,
-        provider: payload.provider,
+        data: payload.data.clone(),
+        provider: payload.provider.clone(),
         validator: ReclaimProofValidator,
     };
-    let data = match proof_service.validate_and_get_identity_record().await {
+    match proof_service.validate_and_get_identity_record().await {
         Ok(data) => data,   
         Err(e) => return e.into_response(),
     };
-    proof_clone = payload.proof.clone();
-    let public_data = proof_clone.public_data;
-    let identifier = proof_clone.identifier.to_string();
-    let provider = proof_service.provider.to_string();
-    let user_service = UserService::new(state.prover, jwt_user_payload.clone().user_id);
-    let user_id = jwt_user_payload.clone().user_id;
-    let account_repo: crate::entities::account_repo::AccountRepo = state.account_repo;
 
-    match user_service.add_data_to_user_account(data).await {
+    let account_repo: crate::entities::account_repo::AccountRepo = state.account_repo;
+    let user_service = UserService::new(state.prover, payload.signer.clone());
+    let user_amino_signed_record = UserAminoSignedRecord::new(
+        payload.public_key.clone(),
+        payload.signature.clone(),
+        payload.signer.clone(),
+        serde_json::to_string(&payload.data).unwrap(),
+    );
+
+    match user_service.add_data_to_user_account(
+        user_amino_signed_record.to_user_record()
+    ).await {
         Ok(_) => {
             // add proof to db
+            let proof_clone = payload.data.clone();
+            let public_data = proof_clone.public_data.clone();
+            let identifier = proof_clone.identifier.to_string();
+            let provider = payload.provider.clone().to_string();
             let created_at = get_current_time();
             let empty_public_data: Option<Vec<u8>> = None;
             let empty_raw_proof: Vec<u8> = Vec::new();
@@ -46,7 +57,7 @@ pub async fn add_proof(
                 email: "".to_string(),
                 username: "".to_string(),
                 created_at: created_at,
-                account_id: user_id,
+                account_id: payload.signer.clone(),
                 provider: provider,
                 public_data: empty_public_data,
                 proof_identifier: identifier,
@@ -54,7 +65,6 @@ pub async fn add_proof(
                 raw_proof: empty_raw_proof,
             };
             proof.set_public_data(public_data);
-            let proof_clone = payload.proof.clone();
             proof.set_raw_proof(&proof_clone);
 
             // check if proof is already exists
@@ -84,7 +94,6 @@ pub async fn add_proof(
 
 pub async fn get_proof_stats(
     State(state): State<AppState>,
-    Extension(jwt_user_payload): Extension<JwtUserPayload>,
 ) -> impl IntoResponse {
     let account_repo = state.account_repo;
     

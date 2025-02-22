@@ -4,7 +4,7 @@ interface LoginCredentials {
   signer: string;
   public_key: string;
   signature: string;
-  message: string;
+  data: string;
 }
 
 interface AuthResponse {
@@ -21,7 +21,7 @@ class AuthService {
   private readonly ACCESS_TOKEN_KEY = 'access_token';
   private readonly REFRESH_TOKEN_KEY = 'refresh_token';
 
-  private constructor() { }
+  private constructor() {}
 
   public static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -59,7 +59,7 @@ class AuthService {
           signer: credentials.signer,
           public_key: credentials.public_key,
           signature: credentials.signature,
-          message: credentials.message,
+          data: credentials.data,
         }),
       });
 
@@ -105,7 +105,7 @@ class AuthService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${refreshToken}`,
+          Authorization: `Bearer ${refreshToken}`,
         },
       });
 
@@ -140,7 +140,7 @@ class AuthService {
         await fetch('http://localhost:8080/auth/logout', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${refreshToken}`,
+            Authorization: `Bearer ${refreshToken}`,
           },
         });
       }

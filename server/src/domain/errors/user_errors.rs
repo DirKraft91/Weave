@@ -1,4 +1,5 @@
 use thiserror::Error;
+use prism_client::PrismApiError;
 
 #[derive(Debug, Error)]
 pub enum UserError {
@@ -39,6 +40,12 @@ impl axum::response::IntoResponse for UserError {
 
 impl From<anyhow::Error> for UserError {
     fn from(error: anyhow::Error) -> Self {
+        UserError::TransactionError(error.to_string())
+    }
+}
+
+impl From<PrismApiError> for UserError {
+    fn from(error: PrismApiError) -> Self {
         UserError::TransactionError(error.to_string())
     }
 }

@@ -1,4 +1,4 @@
-use reclaim_rust_sdk::{ Proof as ReclaimProof };
+use reclaim_rust_sdk::Proof as ReclaimProof;
 use std::string::ToString;
 use serde_json::Value;
 use chrono::Utc;

@@ -1,4 +1,4 @@
-use std::{sync::Arc};
+use std::sync::Arc;
 use axum::{
     extract::State,
     response::{IntoResponse, Response},
@@ -7,12 +7,12 @@ use axum::{
 };
 use prism_prover::Prover;
 use serde_json::json;
-use crate::{api::dto::request::auth_req::AuthWalletRequestDto, entities::{account::Account as AccountEntity, account_repo::AccountRepo}, utils::common::get_current_time};
+use crate::{api::dto::request::auth_req::AuthWalletRequestDto, domain::models::user::UserAminoSignedRecord, entities::{account::Account as AccountEntity, account_repo::AccountRepo}, utils::common::get_current_time};
 use crate::api::dto::response::auth_res::AuthWalletResponseDto;
-use crate::services::auth_service::AuthService;
 use crate::services::user_service::UserService;
 use crate::utils::jwt::{create_access_token, create_refresh_token, decode_token, TokenType};
 use chrono::Utc;
+use log::debug;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -24,11 +24,28 @@ pub async fn auth_wallet(
     State(state): State<AppState>,
     Json(body): Json<AuthWalletRequestDto>
 ) -> Response {
-    if let Err(e) = AuthService::verify_wallet_signature(&body) {
-        return e.into_response();
-    }
+    let user_amino_signed_record = UserAminoSignedRecord::new(
+        body.public_key.clone(), 
+        body.signature.clone(), body.signer.clone(), 
+        body.data.clone()
+    );
+    let user_record = user_amino_signed_record.to_user_record();
+    let data = user_record.user_data.clone();
+    let signature = user_record.signature_bundle.signature.clone();
+    let verifying_key = user_record.signature_bundle.verifying_key.clone();
+    let is_valid = verifying_key.verify_signature(&data, &signature);
 
-    match UserService::new(state.prover, body.signer.clone()).create_user_account(body.signer.clone()).await {
+    match is_valid {
+        Ok(_) => {
+            debug!("is_valid: {:?}", is_valid);
+        }
+        Err(e) => {
+            debug!("is_valid not valid: {:?}", e);
+        }
+    }
+    let user_service = UserService::new(state.prover, body.signer.clone());
+
+    match user_service.create_user_account(user_record.signature_bundle, user_record.user_data).await {
         Ok(_) => {
             // Get the current timestamp safely
             let created_at = get_current_time();
