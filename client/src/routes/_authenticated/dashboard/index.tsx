@@ -20,7 +20,6 @@ const providers: Provider[] = [
     name: 'X',
     domain: 'x.com',
     icon: FaSquareXTwitter,
-    iconClassName: 'text-white',
   },
   {
     id: 'google',
@@ -35,14 +34,12 @@ const providers: Provider[] = [
     name: 'Linkedin',
     domain: 'linkedin.com',
     icon: FaLinkedin,
-    iconClassName: 'text-[#0A66C2]',
   },
   {
     id: 'github',
     name: 'Github',
     domain: 'github.com',
     icon: FaGithub,
-    iconClassName: 'text-white',
   },
 ];
 
@@ -53,7 +50,7 @@ function ProviderCard({ provider }: { provider: Provider }) {
     <Card className="w-full">
       <CardHeader className="flex items-center gap-3 pb-2 mb-24">
         <div className="flex gap-3">
-          <Icon className={`text-2xl ${provider.iconClassName}`} />
+          <Icon className={`text-5xl ${provider.iconClassName}`} />
           <div className="flex flex-col">
             <span className="text-white font-medium">{provider.name}</span>
             <span className="text-sm text-content-subtle">{provider.domain}</span>
