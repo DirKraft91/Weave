@@ -1,5 +1,8 @@
+import { ProofModal } from '@/components/ProofModal';
 import { Provider, ProviderCard } from '@/components/ProviderCard/ProviderCard';
+import { useDisclosure } from '@heroui/react';
 import { createFileRoute } from '@tanstack/react-router';
+import { useState } from 'react';
 import { FaGithub, FaLinkedin } from 'react-icons/fa';
 import { FaSquareXTwitter } from "react-icons/fa6";
 import { FcGoogle } from 'react-icons/fc';
@@ -38,6 +41,14 @@ const providers: Provider[] = [
 ];
 
 function DashboardComponent() {
+  const proofModal = useDisclosure();
+  const [selectedProvider, setSelectedProvider] = useState<Provider>();
+
+  const handleVerify = (provider: Provider) => {
+    setSelectedProvider(provider);
+    proofModal.onOpen();
+  };
+
   return (
     <div className="p-6 w-full">
       <h1 className="text-3xl font-semibold text-white mb-8">
@@ -46,9 +57,20 @@ function DashboardComponent() {
 
       <div className="grid grid-cols-[repeat(2,333px)] gap-6 justify-start">
         {providers.map((provider) => (
-          <ProviderCard key={provider.id} provider={provider} />
+          <ProviderCard
+            key={provider.id}
+            provider={provider}
+            onVerify={handleVerify}
+          />
         ))}
       </div>
+
+      {selectedProvider && (
+        <ProofModal
+          {...proofModal}
+          provider={selectedProvider}
+        />
+      )}
     </div>
   );
 }

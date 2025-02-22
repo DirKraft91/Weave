@@ -15,9 +15,10 @@ export interface Provider {
 
 interface ProviderCardProps {
   provider: Provider;
+  onVerify?: (provider: Provider) => void;
 }
 
-export function ProviderCard({ provider }: ProviderCardProps) {
+export function ProviderCard({ provider, onVerify }: ProviderCardProps) {
   const Icon = provider.icon;
 
   return (
@@ -53,6 +54,7 @@ export function ProviderCard({ provider }: ProviderCardProps) {
             className="w-full"
             variant="bordered"
             color="secondary"
+            onClick={() => onVerify?.(provider)}
           >
             Approve username
           </Button>
