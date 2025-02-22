@@ -1,10 +1,9 @@
 import { Button, Card, CardBody, CardHeader, Divider } from "@heroui/react";
 import { createFileRoute } from '@tanstack/react-router';
 import { IconType } from 'react-icons';
-import { FaLinkedin } from 'react-icons/fa';
+import { FaGithub, FaLinkedin } from 'react-icons/fa';
 import { FaSquareXTwitter } from "react-icons/fa6";
 import { FcGoogle } from 'react-icons/fc';
-
 interface Provider {
   id: string;
   name: string;
@@ -40,9 +39,9 @@ const providers: Provider[] = [
   },
   {
     id: 'github',
-    name: 'Google',
-    domain: 'gmail.com',
-    icon: FcGoogle,
+    name: 'Github',
+    domain: 'github.com',
+    icon: FaGithub,
     iconClassName: 'text-white',
   },
 ];
