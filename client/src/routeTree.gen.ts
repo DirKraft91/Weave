@@ -11,13 +11,13 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as AuthenticatedImport } from './routes/_authenticated'
-import { Route as AuthenticatedDashboardIndexImport } from './routes/_authenticated/dashboard/index'
-import { Route as AuthenticatedSearchIndexImport } from './routes/_authenticated/search/index'
 import { Route as UnathenticatedImport } from './routes/_unathenticated'
-import { Route as UnathenticatedAboutIndexImport } from './routes/_unathenticated/about/index'
-import { Route as UnathenticatedHowIndexImport } from './routes/_unathenticated/how/index'
+import { Route as AuthenticatedImport } from './routes/_authenticated'
 import { Route as UnathenticatedIndexImport } from './routes/_unathenticated/index'
+import { Route as UnathenticatedHowIndexImport } from './routes/_unathenticated/how/index'
+import { Route as UnathenticatedAboutIndexImport } from './routes/_unathenticated/about/index'
+import { Route as AuthenticatedSearchIndexImport } from './routes/_authenticated/search/index'
+import { Route as AuthenticatedDashboardIndexImport } from './routes/_authenticated/dashboard/index'
 
 // Create/Update Routes
 
@@ -185,14 +185,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to: '' | '/' | '/dashboard' | '/search' | '/about' | '/how'
   id:
-  | '__root__'
-  | '/_authenticated'
-  | '/_unathenticated'
-  | '/_unathenticated/'
-  | '/_authenticated/dashboard/'
-  | '/_authenticated/search/'
-  | '/_unathenticated/about/'
-  | '/_unathenticated/how/'
+    | '__root__'
+    | '/_authenticated'
+    | '/_unathenticated'
+    | '/_unathenticated/'
+    | '/_authenticated/dashboard/'
+    | '/_authenticated/search/'
+    | '/_unathenticated/about/'
+    | '/_unathenticated/how/'
   fileRoutesById: FileRoutesById
 }
 
