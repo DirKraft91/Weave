@@ -1,3 +1,5 @@
+import SpiderInteresting from '@/assets/spider-interesting.png';
+import SpiderSad from '@/assets/spider-sad.png';
 import { ProviderCard } from "@/components/ProviderCard";
 import { SearchInput } from "@/components/SearchInput/SearchInput";
 import { Proof, searchService } from "@/services/search.service";
@@ -6,55 +8,33 @@ import { addToast } from "@heroui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
-interface SearchResult {
-  id: string;
-  proofs: Proof[];
-}
-
 function SearchComponent() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<SearchResult | null>(null);
+  const [searchResults, setSearchResults] = useState<Proof[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
-      setResult(null);
+      setSearchResults([]);
+      setNotFound(false);
       return;
     }
 
     try {
-      setIsLoading(true);
-      const searchResult = await searchService.searchWallets(query);
-
-      if (!searchResult) {
-        addToast({
-          title: 'Not Found',
-          description: 'No wallet found with this address',
-          color: 'warning',
-          timeout: 3000,
-        });
-        return;
-      }
-
-      if (searchResult.proofs.length === 0) {
-        addToast({
-          title: 'No Proofs',
-          description: 'This wallet has no verified providers',
-          color: 'default',
-          timeout: 3000,
-        });
-      }
-
-      setResult(searchResult);
+      setIsSearching(true);
+      const results = await searchService.search(query);
+      setSearchResults(results?.proofs || []);
+      setNotFound(results?.proofs.length === 0);
     } catch (error) {
-      console.error("Search error:", error);
       addToast({
         title: 'Error',
-        description: 'Failed to search wallet. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to search',
         color: 'danger',
         timeout: 3000,
       });
+      setNotFound(true);
     } finally {
-      setIsLoading(false);
+      setIsSearching(false);
     }
   };
 
@@ -65,22 +45,22 @@ function SearchComponent() {
       </h2>
 
       <div className="flex flex-col gap-6">
-        <div className="max-w-xl">
+        <div className="max-w-2xl">
           <SearchInput
             onSearch={handleSearch}
             placeholder="Enter wallet address"
-            isLoading={isLoading}
+            isLoading={isSearching}
             debounceMs={500}
           />
         </div>
 
-        {result && result.proofs.length > 0 && (
-          <div className="grid grid-cols-[repeat(2,333px)] gap-6 justify-start">
-            {result.proofs.map((proof) => (
+        {searchResults.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {searchResults.map((proof, index) => (
               <ProviderCard
-                key={proof.proof_identifier}
+                key={index}
                 provider={{
-                  id: proof.provider,
+                  id: proof.proof_identifier,
                   name: proof.provider,
                   icon: getProviderIcon(proof.provider),
                   isVerified: true,
@@ -92,6 +72,26 @@ function SearchComponent() {
             ))}
           </div>
         )}
+
+        <div className="relative flex flex-col items-center justify-center gap-8 mt-4">
+          <span className={`text-3xl font-bold self-start transition-opacity duration-300 ${notFound ? 'opacity-100' : 'opacity-0'}`}>
+            Not Found
+          </span>
+
+          <div className="relative">
+            {notFound ? (
+              <img
+                src={SpiderSad}
+                alt="Sad spider"
+              />
+            ) : (
+              <img
+                src={SpiderInteresting}
+                alt="Interesting spider"
+              />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

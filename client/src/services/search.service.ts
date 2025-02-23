@@ -27,13 +27,16 @@ class SearchService {
     return SearchService.instance;
   }
 
-  async searchWallets(address: string): Promise<SearchResponse['data'] | null> {
+  async search(address: string): Promise<SearchResponse['data']> {
     try {
       const response = await httpService.get<SearchResponse>(`/user/${address}`);
+      if (!response.data) {
+        throw new Error('No data found');
+      }
       return response.data;
     } catch (error) {
       console.error('Search error:', error);
-      return null;
+      throw error;
     }
   }
 }
