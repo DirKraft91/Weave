@@ -1,3 +1,4 @@
+import FlowImage from '@/assets/Flow.svg';
 import SpiderHappy from '@/assets/spider-happy.png';
 import { createFileRoute } from '@tanstack/react-router';
 
@@ -54,7 +55,9 @@ function HowItWorksComponent() {
             </div>
 
 
-            {/* // add graph image */}
+            <div className="flex flex-col mt-12">
+              <img src={FlowImage} alt="Flow" />
+            </div>
           </div>
         </div>
       </div>
