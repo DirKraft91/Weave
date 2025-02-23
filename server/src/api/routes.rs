@@ -1,6 +1,3 @@
-use prism_prover::Prover;
-use std::sync::Arc;
-
 use axum::{
     routing::post,
     routing::get,
@@ -16,7 +13,7 @@ use http::{
 use crate::middleware::auth::auth_middleware;
 use crate::api::handlers::proof::{add_proof, get_proof_stats};
 use crate::api::handlers::user::{get_user, get_me};
-use crate::api::handlers::auth::{auth_wallet, refresh_tokens, logout};
+use crate::api::handlers::auth::{auth_wallet, refresh_tokens};
 
 use super::handlers::auth::AppState;
 
@@ -34,8 +31,7 @@ pub fn create_router(state: AppState) -> Router {
 
     let public_routes = Router::new()
         .route("/auth", post(auth_wallet))
-        .route("/auth/refresh", post(refresh_tokens))
-        .route("/auth/logout", post(logout));
+        .route("/auth/refresh", post(refresh_tokens));
 
     let protected_routes = Router::new()
         .route("/proof", post(add_proof))

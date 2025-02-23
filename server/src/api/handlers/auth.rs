@@ -164,35 +164,3 @@ pub async fn refresh_tokens(headers: HeaderMap) -> Response {
         }))
     ).into_response()
 }
-
-pub async fn logout(headers: HeaderMap) -> Response {
-    match headers.get("Authorization") {
-        Some(auth_header) => {
-            let auth_str = auth_header.to_str().unwrap_or("");
-            if !auth_str.starts_with("Bearer ") {
-                return (
-                    StatusCode::UNAUTHORIZED,
-                    Json(json!({
-                        "success": false,
-                        "message": "Invalid authorization header format"
-                    }))
-                ).into_response();
-            }
-        },
-        None => return (
-            StatusCode::UNAUTHORIZED,
-            Json(json!({
-                "success": false,
-                "message": "No token provided"
-            }))
-        ).into_response(),
-    };
-
-    (
-        StatusCode::OK,
-        Json(json!({
-            "success": true,
-            "message": "Successfully logged out"
-        }))
-    ).into_response()
-}

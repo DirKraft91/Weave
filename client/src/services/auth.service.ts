@@ -131,25 +131,6 @@ class AuthService {
       return false;
     }
   }
-
-  async logout(): Promise<void> {
-    try {
-      const refreshToken = this.getRefreshToken();
-
-      if (refreshToken) {
-        await fetch('http://localhost:8080/auth/logout', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${refreshToken}`,
-          },
-        });
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      this.clearTokens();
-    }
-  }
 }
 
 export const authService = AuthService.getInstance();

@@ -5,7 +5,6 @@ import { wallets } from '@/config/wallets';
 import { useChainStore } from '@/contexts';
 import { authStore } from '@/contexts/auth';
 import { useWalletStore, walletStore } from '@/contexts/wallet';
-import { authService } from '@/services/auth.service';
 import { Connected } from './Connected';
 import { SelectWallet } from './SelectWallet';
 
@@ -23,18 +22,12 @@ export const WalletConnect = () => {
   }, [chainWallet?.isWalletConnected]);
 
   const handleDisconnect = async () => {
-    await authService.logout();
     authStore.clearAuthToken();
     walletStore.setSelectedWallet(null);
   };
 
   if (selectedWallet && selectedWallet.isWalletConnected) {
-    return (
-      <Connected
-        selectedWallet={selectedWallet}
-        clearSelectedWallet={handleDisconnect}
-      />
-    );
+    return <Connected selectedWallet={selectedWallet} clearSelectedWallet={handleDisconnect} />;
   }
 
   return <SelectWallet />;
