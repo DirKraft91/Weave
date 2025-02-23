@@ -1,13 +1,14 @@
+import { authService } from '@/services/auth.service';
 import { create } from 'zustand';
 
-interface AuthStore {
+export interface AuthStore {
   authToken: null | string;
 }
 
 export const defaultAuthToken = null;
 
 export const useAuthStore = create<AuthStore>()(() => ({
-  authToken: defaultAuthToken,
+  authToken: authService.getAccessToken(),
 }));
 
 export const authStore = {

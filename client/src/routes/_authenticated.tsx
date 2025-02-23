@@ -1,13 +1,24 @@
 import { AsideNavigation } from '@/components/AsideNavigation';
 import { Header } from '@/components/Header';
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { useAuthStore } from '@/contexts/auth';
+import { createFileRoute, Navigate, Outlet, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_authenticated')({
-  beforeLoad: () => { },
+  beforeLoad: ({ context }) => {
+    if (!context.auth.access) {
+      throw redirect({ to: '/' });
+    }
+  },
   component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
+  const { authToken } = useAuthStore();
+
+  if (!authToken) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />

@@ -2,9 +2,6 @@ import { Header } from '@/components/Header';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_unathenticated')({
-  beforeLoad: async ({ context }) => {
-    console.log('beforeLoad', context);
-  },
   component: UnauthenticatedLayout,
 });
 

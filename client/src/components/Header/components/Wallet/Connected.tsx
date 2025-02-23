@@ -5,7 +5,9 @@ import { ClipboardDocumentIcon, ArrowLeftStartOnRectangleIcon, HomeIcon } from '
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { getWalletLogo, shortenAddress } from '@/utils/common';
 import { useNavigate } from '@tanstack/react-router';
-
+import { authStore } from '@/contexts';
+import { authService } from '@/services/auth.service';
+import { useAuthStore } from '@/contexts/auth';
 export const Connected = ({
   selectedWallet,
   clearSelectedWallet,
@@ -16,6 +18,16 @@ export const Connected = ({
   const { walletInfo, disconnect, address } = selectedWallet;
   const { copyToClipboard } = useCopyToClipboard();
   const navigate = useNavigate();
+  const { authToken } = useAuthStore();
+
+  const isAuthenticated = !!authToken;
+
+  const handleLogout = () => {
+    clearSelectedWallet();
+    disconnect();
+    authStore.clearAuthToken();
+    authService.logout();
+  };
 
   if (!address) return null;
 
@@ -52,28 +64,22 @@ export const Connected = ({
             Copy Address
           </div>
         </DropdownItem>
-        <DropdownItem
-          key="dashboard"
-          onClick={() => {
-            navigate({
-              to: '/dashboard',
-            });
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <HomeIcon width={16} height={16} />
-            Dashboard
-          </div>
-        </DropdownItem>
-        <DropdownItem
-          key="logout"
-          className="text-danger"
-          color="danger"
-          onClick={() => {
-            clearSelectedWallet();
-            disconnect();
-          }}
-        >
+        {isAuthenticated ? (
+          <DropdownItem
+            key="dashboard"
+            onClick={() => {
+              navigate({
+                to: '/dashboard',
+              });
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <HomeIcon width={16} height={16} />
+              Dashboard
+            </div>
+          </DropdownItem>
+        ) : null}
+        <DropdownItem key="logout" className="text-danger" color="danger" onClick={handleLogout}>
           <div className="flex items-center gap-2">
             <ArrowLeftStartOnRectangleIcon width={16} height={16} />
             Logout

@@ -1,14 +1,20 @@
 import { Background } from '@/components/Background';
 import { ChainProvider } from '@cosmos-kit/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createRootRoute, Outlet } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { assets, chains } from 'chain-registry';
 import { wallets } from '../config/wallets';
 
 const queryClient = new QueryClient();
 
-export const Route = createRootRoute({
+export interface RootRouterContext {
+  auth: {
+    access: boolean;
+  };
+}
+
+export const Route = createRootRouteWithContext<RootRouterContext>()({
   component: () => (
     <QueryClientProvider client={queryClient}>
       <ChainProvider

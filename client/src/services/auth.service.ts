@@ -48,6 +48,10 @@ class AuthService {
     cookieService.delete(this.REFRESH_TOKEN_KEY);
   }
 
+  logout(): void {
+    this.clearTokens();
+  }
+
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
       const response = await fetch('http://localhost:8080/auth', {

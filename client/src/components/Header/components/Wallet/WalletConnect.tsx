@@ -5,6 +5,7 @@ import { wallets } from '@/config/wallets';
 import { useChainStore } from '@/contexts';
 import { authStore } from '@/contexts/auth';
 import { useWalletStore, walletStore } from '@/contexts/wallet';
+import { authService } from '@/services/auth.service';
 import { Connected } from './Connected';
 import { SelectWallet } from './SelectWallet';
 
@@ -18,6 +19,10 @@ export const WalletConnect = () => {
   useEffect(() => {
     if (chainWallet?.isWalletConnected) {
       walletStore.setSelectedWallet(chainWallet);
+    } else {
+      authStore.clearAuthToken();
+      walletStore.setSelectedWallet(null);
+      authService.logout();
     }
   }, [chainWallet?.isWalletConnected]);
 
