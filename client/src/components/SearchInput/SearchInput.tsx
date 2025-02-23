@@ -1,6 +1,7 @@
 import { useDebounce } from "@/hooks/useDebounce";
-import { Input, Spinner } from "@heroui/react";
+import { Button, Input, Spinner } from "@heroui/react";
 import { ChangeEvent, useCallback, useState } from "react";
+import { IoClose } from "react-icons/io5";
 
 interface SearchInputProps {
   onSearch: (value: string) => void;
@@ -16,7 +17,6 @@ export function SearchInput({
   debounceMs = 300
 }: SearchInputProps) {
   const [value, setValue] = useState("");
-
   const debouncedSearch = useDebounce(onSearch, debounceMs);
 
   const handleChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
@@ -25,6 +25,11 @@ export function SearchInput({
     debouncedSearch(newValue);
   }, [debouncedSearch]);
 
+  const handleClear = useCallback(() => {
+    setValue("");
+    onSearch("");
+  }, [onSearch]);
+
   return (
     <div className="relative">
       <Input
@@ -32,11 +37,20 @@ export function SearchInput({
         onChange={handleChange}
         placeholder={placeholder}
       />
-      {isLoading && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          <Spinner size="sm" />
-        </div>
-      )}
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+        {value && !isLoading && (
+          <Button
+            isIconOnly
+            variant="light"
+            size="sm"
+            onClick={handleClear}
+            className="min-w-8 w-8 h-8"
+          >
+            <IoClose className="w-4 h-4" />
+          </Button>
+        )}
+        {isLoading && <Spinner size="sm" />}
+      </div>
     </div>
   );
 }
