@@ -7,7 +7,7 @@ export const makeKeplrChainInfo = (chain: Chain, asset: Asset): ChainInfo => {
     coinMinimalDenom: asset.base,
     coinDecimals: asset.denom_units.find(({ denom }) => denom === asset.display)?.exponent ?? 6,
     coinGeckoId: asset.coingecko_id,
-    coinImageUrl: asset.logo_URIs?.svg || asset.logo_URIs?.png || asset.logo_URIs?.jpeg || '',
+    coinImageUrl: asset.logo_URIs?.svg || asset.logo_URIs?.png || '',
   };
 
   return {
