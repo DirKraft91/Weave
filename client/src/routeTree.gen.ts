@@ -11,11 +11,13 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as UnathenticatedImport } from './routes/_unathenticated'
 import { Route as AuthenticatedImport } from './routes/_authenticated'
-import { Route as UnathenticatedIndexImport } from './routes/_unathenticated/index'
-import { Route as AuthenticatedSearchIndexImport } from './routes/_authenticated/search/index'
 import { Route as AuthenticatedDashboardIndexImport } from './routes/_authenticated/dashboard/index'
+import { Route as AuthenticatedSearchIndexImport } from './routes/_authenticated/search/index'
+import { Route as UnathenticatedImport } from './routes/_unathenticated'
+import { Route as UnathenticatedAboutIndexImport } from './routes/_unathenticated/about/index'
+import { Route as UnathenticatedHowIndexImport } from './routes/_unathenticated/how/index'
+import { Route as UnathenticatedIndexImport } from './routes/_unathenticated/index'
 
 // Create/Update Routes
 
@@ -32,6 +34,18 @@ const AuthenticatedRoute = AuthenticatedImport.update({
 const UnathenticatedIndexRoute = UnathenticatedIndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => UnathenticatedRoute,
+} as any)
+
+const UnathenticatedHowIndexRoute = UnathenticatedHowIndexImport.update({
+  id: '/how/',
+  path: '/how/',
+  getParentRoute: () => UnathenticatedRoute,
+} as any)
+
+const UnathenticatedAboutIndexRoute = UnathenticatedAboutIndexImport.update({
+  id: '/about/',
+  path: '/about/',
   getParentRoute: () => UnathenticatedRoute,
 } as any)
 
@@ -87,6 +101,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSearchIndexImport
       parentRoute: typeof AuthenticatedImport
     }
+    '/_unathenticated/about/': {
+      id: '/_unathenticated/about/'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof UnathenticatedAboutIndexImport
+      parentRoute: typeof UnathenticatedImport
+    }
+    '/_unathenticated/how/': {
+      id: '/_unathenticated/how/'
+      path: '/how'
+      fullPath: '/how'
+      preLoaderRoute: typeof UnathenticatedHowIndexImport
+      parentRoute: typeof UnathenticatedImport
+    }
   }
 }
 
@@ -108,10 +136,14 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 
 interface UnathenticatedRouteChildren {
   UnathenticatedIndexRoute: typeof UnathenticatedIndexRoute
+  UnathenticatedAboutIndexRoute: typeof UnathenticatedAboutIndexRoute
+  UnathenticatedHowIndexRoute: typeof UnathenticatedHowIndexRoute
 }
 
 const UnathenticatedRouteChildren: UnathenticatedRouteChildren = {
   UnathenticatedIndexRoute: UnathenticatedIndexRoute,
+  UnathenticatedAboutIndexRoute: UnathenticatedAboutIndexRoute,
+  UnathenticatedHowIndexRoute: UnathenticatedHowIndexRoute,
 }
 
 const UnathenticatedRouteWithChildren = UnathenticatedRoute._addFileChildren(
@@ -123,6 +155,8 @@ export interface FileRoutesByFullPath {
   '/': typeof UnathenticatedIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/search': typeof AuthenticatedSearchIndexRoute
+  '/about': typeof UnathenticatedAboutIndexRoute
+  '/how': typeof UnathenticatedHowIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -130,6 +164,8 @@ export interface FileRoutesByTo {
   '/': typeof UnathenticatedIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/search': typeof AuthenticatedSearchIndexRoute
+  '/about': typeof UnathenticatedAboutIndexRoute
+  '/how': typeof UnathenticatedHowIndexRoute
 }
 
 export interface FileRoutesById {
@@ -139,20 +175,24 @@ export interface FileRoutesById {
   '/_unathenticated/': typeof UnathenticatedIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/_authenticated/search/': typeof AuthenticatedSearchIndexRoute
+  '/_unathenticated/about/': typeof UnathenticatedAboutIndexRoute
+  '/_unathenticated/how/': typeof UnathenticatedHowIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '' | '/' | '/dashboard' | '/search'
+  fullPaths: '' | '/' | '/dashboard' | '/search' | '/about' | '/how'
   fileRoutesByTo: FileRoutesByTo
-  to: '' | '/' | '/dashboard' | '/search'
+  to: '' | '/' | '/dashboard' | '/search' | '/about' | '/how'
   id:
-    | '__root__'
-    | '/_authenticated'
-    | '/_unathenticated'
-    | '/_unathenticated/'
-    | '/_authenticated/dashboard/'
-    | '/_authenticated/search/'
+  | '__root__'
+  | '/_authenticated'
+  | '/_unathenticated'
+  | '/_unathenticated/'
+  | '/_authenticated/dashboard/'
+  | '/_authenticated/search/'
+  | '/_unathenticated/about/'
+  | '/_unathenticated/how/'
   fileRoutesById: FileRoutesById
 }
 
@@ -190,7 +230,9 @@ export const routeTree = rootRoute
     "/_unathenticated": {
       "filePath": "_unathenticated.tsx",
       "children": [
-        "/_unathenticated/"
+        "/_unathenticated/",
+        "/_unathenticated/about/",
+        "/_unathenticated/how/"
       ]
     },
     "/_unathenticated/": {
@@ -204,6 +246,14 @@ export const routeTree = rootRoute
     "/_authenticated/search/": {
       "filePath": "_authenticated/search/index.tsx",
       "parent": "/_authenticated"
+    },
+    "/_unathenticated/about/": {
+      "filePath": "_unathenticated/about/index.tsx",
+      "parent": "/_unathenticated"
+    },
+    "/_unathenticated/how/": {
+      "filePath": "_unathenticated/how/index.tsx",
+      "parent": "/_unathenticated"
     }
   }
 }
