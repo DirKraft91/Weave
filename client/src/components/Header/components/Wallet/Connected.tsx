@@ -37,7 +37,7 @@ export const Connected = ({
       </DropdownTrigger>
       <DropdownMenu aria-label="Static Actions" variant="faded">
         <DropdownItem
-          key="new"
+          key="copy-address"
           onClick={() => {
             copyToClipboard(address);
             addToast({
@@ -53,7 +53,7 @@ export const Connected = ({
           </div>
         </DropdownItem>
         <DropdownItem
-          key="new"
+          key="dashboard"
           onClick={() => {
             navigate({
               to: '/dashboard',
@@ -66,7 +66,7 @@ export const Connected = ({
           </div>
         </DropdownItem>
         <DropdownItem
-          key="delete"
+          key="logout"
           className="text-danger"
           color="danger"
           onClick={() => {

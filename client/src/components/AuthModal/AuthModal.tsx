@@ -70,11 +70,9 @@ export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         backdrop="blur"
         classNames={{
           base: 'bg-secondary',
-          backdrop: 'z-49',
         }}
         isOpen={isOpen}
         onClose={onClose}
-        portalContainer={document.getElementById('root') as Element}
         hideCloseButton
       >
         <ModalContent>

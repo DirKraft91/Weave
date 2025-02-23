@@ -4,6 +4,8 @@ use axum::{
     Json,
     extract::State,
 };
+use prism_client::binary::ToBinary;
+use reclaim_rust_sdk::Proof as ReclaimProof;
 use serde_json::json;
 use crate::{
     api::dto::request::proof_req::ApplyProofRequestDto, 
@@ -15,6 +17,7 @@ use crate::{
 use crate::api::dto::response::proof_res::{ApplyProofResponseDto, ProofStatsResponseDto};
 use crate::services::proof_service::ProofService;
 use crate::services::user_service::UserService;
+use base64;
 
 use super::auth::AppState;
 
@@ -22,8 +25,10 @@ pub async fn add_proof(
     State(state): State<AppState>,
     Json(payload): Json<ApplyProofRequestDto>,
 ) -> impl IntoResponse {
+    let proof: ReclaimProof = payload.data;
+
     let proof_service = ProofService {
-        data: payload.data.clone(),
+        data: proof.clone(),
         provider: payload.provider.clone(),
         validator: ReclaimProofValidator,
     };
@@ -31,14 +36,13 @@ pub async fn add_proof(
         Ok(data) => data,   
         Err(e) => return e.into_response(),
     };
-
     let account_repo: crate::entities::account_repo::AccountRepo = state.account_repo;
     let user_service = UserService::new(state.prover, payload.signer.clone());
     let user_amino_signed_record = UserAminoSignedRecord::new(
         payload.public_key.clone(),
         payload.signature.clone(),
         payload.signer.clone(),
-        serde_json::to_string(&payload.data).unwrap(),
+        base64::encode(proof.clone().encode_to_bytes().unwrap_or_default()),
     );
 
     match user_service.add_data_to_user_account(
@@ -46,7 +50,7 @@ pub async fn add_proof(
     ).await {
         Ok(_) => {
             // add proof to db
-            let proof_clone = payload.data.clone();
+            let proof_clone = proof.clone();
             let public_data = proof_clone.public_data.clone();
             let identifier = proof_clone.identifier.to_string();
             let provider = payload.provider.clone().to_string();

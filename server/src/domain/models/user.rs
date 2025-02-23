@@ -18,6 +18,7 @@ impl User {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct UserAminoSignedRecord {
     pub public_key: String,
     pub signature: String,

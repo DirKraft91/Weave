@@ -1,5 +1,4 @@
 import { Proof as ReclaimProof, ReclaimProofRequest } from '@reclaimprotocol/js-sdk';
-import { Provider } from '../components/ProviderCard';
 import { httpService } from './http.service';
 
 export type Proof = ReclaimProof;
@@ -15,7 +14,13 @@ interface ProofResponse {
 }
 
 class ProofService {
-  async getVerificationRequest(provider: Provider): Promise<string> {
+  async initializeVerificationRequest({
+    onSuccess,
+    onError,
+  }: {
+    onSuccess: (proof: Proof) => Promise<void>;
+    onError: (error: Error) => Promise<void>;
+  }): Promise<string> {
     // Initialize the Reclaim SDK with your credentials
     const reclaimProofRequest = await ReclaimProofRequest.init(APP_ID, APP_SECRET, PROVIDER_ID);
 
@@ -25,32 +30,26 @@ class ProofService {
     await reclaimProofRequest.startSession({
       // Called when the user successfully completes the verification
       onSuccess: async (proofs) => {
-        // Add your success logic here, such as:
-        // - Updating UI to show verification success
-        // - Storing verification status
-        // - Redirecting to another page
-        if (proofs && typeof proofs !== 'string') {
-          // Send the proof to your backend service for Prism integration
-          // onSuccess(proofs, requestUrl);
-          this.validateProof(proofs, provider);
-        } else {
-          console.error('Invalid proof:', proofs);
-        }
+        if (proofs && typeof proofs !== 'string') onSuccess(Array.isArray(proofs) ? proofs[0] : proofs);
       },
-      onError: (error) => {
-        console.error('Proof verification failed:', error);
-      },
+      onError,
     });
 
     return requestUrl;
   }
 
-  async validateProof(proof: Proof | Proof[], provider: Provider): Promise<boolean> {
+  async saveProof(data: {
+    public_key: string;
+    signature: string;
+    signer: string;
+    data: Proof;
+    provider: string;
+  }): Promise<boolean> {
     try {
-      const response = await httpService.post<ProofResponse>('/proof', { proof, provider });
+      const response = await httpService.post<ProofResponse>('/proof', data);
       return response.data.success;
     } catch (error) {
-      console.error('Error validating proof:', error);
+      console.error('Error saving proof:', error);
       throw error;
     }
   }

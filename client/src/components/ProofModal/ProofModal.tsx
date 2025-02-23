@@ -1,10 +1,13 @@
-import { useEffectOnce } from "@/hooks/useEffectOnce";
-import { proofService } from "@/services/proof.service";
-import { Button, Divider, Modal, ModalBody, ModalContent, ModalFooter } from "@heroui/react";
-import { useCallback, useState } from "react";
-import QRCode from "react-qr-code";
-import { Provider } from "../ProviderCard";
-
+import { useEffectOnce } from '@/hooks/useEffectOnce';
+import { proofService } from '@/services/proof.service';
+import { addToast, Button, closeAll, Modal, ModalBody, ModalContent, ModalFooter } from '@heroui/react';
+import { useState } from 'react';
+import QRCode from 'react-qr-code';
+import { Provider } from '../ProviderCard';
+import { useAsyncExecutor } from '@/hooks/useAsyncExecutor';
+import { useSignArbitrary } from '@/hooks/useSignArbitrary';
+import { useMutation } from '@tanstack/react-query';
+import { Proof } from '@/services/proof.service';
 interface ProofModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -12,27 +15,75 @@ interface ProofModalProps {
 }
 
 export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [requestUrl, setRequestUrl] = useState("");
+  const [requestUrl, setRequestUrl] = useState('');
+  const signArbitrary = useSignArbitrary();
+  const saveProofMutation = useMutation({
+    mutationFn: async (proof: Proof) => {
+      const proofCopy = { ...proof, publicData: undefined };
 
-  const handleGetVerification = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const url = await proofService.getVerificationRequest(provider);
-      setRequestUrl(url);
-    } catch (error) {
-      console.error('Failed to get verification:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [provider]);
+      try {
+        const { signResult, account } = await signArbitrary.sign(JSON.stringify(proofCopy));
+        await proofService.saveProof({
+          signer: account.address,
+          public_key: signResult?.pub_key.value,
+          signature: signResult?.signature || '',
+          data: proofCopy,
+          provider: provider.id,
+        });
+        closeAll();
+        addToast({
+          title: 'Proof saved',
+          description: 'Proof saved successfully',
+          color: 'success',
+          timeout: 3000,
+          priority: 0,
+        });
+        onClose();
+      } catch (error) {
+        closeAll();
+        addToast({
+          title: 'Error saving proof',
+          description: error instanceof Error ? error.message : 'Something went wrong',
+          color: 'danger',
+          timeout: 3000,
+          priority: 0,
+        });
+      }
+    },
+  });
+  const verificationRequest = useAsyncExecutor(async () => {
+    const url = await proofService.initializeVerificationRequest({
+      onSuccess: async (proof: Proof) => {
+        await saveProofMutation.mutateAsync(proof);
+      },
+      onError: async (error) => {
+        addToast({
+          title: 'Error generating proof link',
+          description: error.message || 'Something went wrong',
+          color: 'danger',
+          timeout: 100000,
+          priority: 0,
+        });
+      },
+    });
+    setRequestUrl(url);
+  });
 
   useEffectOnce(() => {
-    handleGetVerification();
+    verificationRequest.asyncExecute();
   });
 
   return (
-    <Modal backdrop="blur" isOpen={isOpen} onClose={onClose}>
+    <Modal
+      classNames={{
+        base: 'bg-secondary',
+      }}
+      backdrop="blur"
+      portalContainer={document.getElementById('root') as Element}
+      hideCloseButton
+      isOpen={isOpen}
+      onClose={onClose}
+    >
       <ModalContent className="bg-secondary">
         <ModalBody>
           {requestUrl && (
@@ -41,18 +92,9 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
             </div>
           )}
         </ModalBody>
-
-        <Divider />
-
         <ModalFooter className="flex flex-col gap-6">
-          <span className="text-medium text-center px-10">
-            Scan this QR Code
-          </span>
-          <Button
-            isLoading={isLoading}
-            variant="solid"
-            onClick={handleGetVerification}
-          >
+          <span className="text-medium text-center px-10">Scan this QR Code</span>
+          <Button isLoading={verificationRequest.isLoading} variant="solid" onClick={verificationRequest.asyncExecute}>
             Generate new link
           </Button>
         </ModalFooter>
