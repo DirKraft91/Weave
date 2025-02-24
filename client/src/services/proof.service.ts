@@ -1,11 +1,8 @@
+import { RECLAIM_CONFIG } from '@/config';
 import { Proof as ReclaimProof, ReclaimProofRequest } from '@reclaimprotocol/js-sdk';
 import { httpService } from './http.service';
 
 export type Proof = ReclaimProof;
-
-const APP_ID = '0xbfB817DdcF51E591A1a9261eaDb57F581BB40c04';
-const APP_SECRET = '0xcbd3a376cca4aaf5abfb98a76f840e414df9b07d96a471f9dac102fb2dd9cddb';
-const PROVIDER_ID = 'a9f1063c-06b7-476a-8410-9ff6e427e637';
 
 interface ProofResponse {
   data: {
@@ -22,7 +19,11 @@ class ProofService {
     onError: (error: Error) => Promise<void>;
   }): Promise<string> {
     // Initialize the Reclaim SDK with your credentials
-    const reclaimProofRequest = await ReclaimProofRequest.init(APP_ID, APP_SECRET, PROVIDER_ID);
+    const reclaimProofRequest = await ReclaimProofRequest.init(
+      RECLAIM_CONFIG.APP_ID,
+      RECLAIM_CONFIG.APP_SECRET,
+      RECLAIM_CONFIG.PROVIDER_ID
+    );
 
     // Generate the verification request URL
     const requestUrl = await reclaimProofRequest.getRequestUrl();

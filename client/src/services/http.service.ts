@@ -1,7 +1,6 @@
+import { API_URL } from '@/config';
 import axios, { AxiosInstance } from 'axios';
 import { authService } from './auth.service';
-
-const BASE_URL = 'http://localhost:8080';
 
 class HttpService {
   private static instance: HttpService;
@@ -9,7 +8,7 @@ class HttpService {
 
   private constructor() {
     this.axios = axios.create({
-      baseURL: BASE_URL,
+      baseURL: API_URL,
       headers: {
         'Content-Type': 'application/json',
       },
