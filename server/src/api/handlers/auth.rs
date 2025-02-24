@@ -7,8 +7,20 @@ use axum::{
 };
 use prism_prover::Prover;
 use serde_json::json;
-use crate::{api::dto::request::auth_req::AuthWalletRequestDto, domain::models::user::UserAminoSignedRecord, entities::{account::Account as AccountEntity, account_repo::AccountRepo}, utils::common::get_current_time};
-use crate::api::dto::response::auth_res::AuthWalletResponseDto;
+use crate::{
+    api::dto::request::auth_req::{
+        PrepareAuthDataRequestDto, 
+        AuthWalletRequestDto
+    }, 
+    domain::models::user::UserAminoSignedRecord, 
+    entities::{
+        account::Account as AccountEntity, 
+        account_repo::AccountRepo
+    }, 
+    services::auth_service::AuthService,
+    utils::common::get_current_time
+};
+use crate::api::dto::response::auth_res::{ AuthWalletResponseDto, PrepareAuthDataResponseDto };
 use crate::services::user_service::UserService;
 use crate::utils::jwt::{create_access_token, create_refresh_token, decode_token, TokenType};
 use chrono::Utc;
@@ -18,6 +30,25 @@ use log::debug;
 pub struct AppState {
     pub prover: Arc<Prover>,
     pub account_repo: AccountRepo,
+}
+
+pub async fn prepare_auth_data (
+    State(state): State<AppState>,
+    Json(body): Json<PrepareAuthDataRequestDto>
+) -> Response {
+    let auth_service = AuthService::new(state.prover);
+    let signer = body.signer.clone();
+    let prepared_auth_data = auth_service.prepare_auth_data(body.signer, body.public_key);
+
+    match prepared_auth_data {
+        Ok(data) => {
+            (StatusCode::OK, Json(PrepareAuthDataResponseDto {
+                data: data.data,
+                signer,
+            })).into_response()
+        }
+        Err(e) => e.into_response(),
+    }
 }
 
 pub async fn auth_wallet(
@@ -45,7 +76,7 @@ pub async fn auth_wallet(
     }
     let user_service = UserService::new(state.prover, body.signer.clone());
 
-    match user_service.create_user_account(user_record.signature_bundle, user_record.user_data).await {
+    match user_service.create_user_account(user_record.signature_bundle).await {
         Ok(_) => {
             // Get the current timestamp safely
             let created_at = get_current_time();

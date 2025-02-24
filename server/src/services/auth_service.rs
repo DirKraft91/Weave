@@ -1,55 +1,60 @@
-use ecdsa::signature::DigestVerifier;
-use k256::sha2::{Digest, Sha256};
-use std::str::FromStr;
+use keystore_rs::KeyChain;
 use tendermint::PublicKey;
-use crate::domain::errors::auth_errors::AuthError;
-use crate::api::dto::request::auth_req::AuthWalletRequestDto;
+use crate::{domain::errors::auth_errors::AuthError, SERVICE_ID};
 use prism_keys::{
-    Signature, 
     VerifyingKey,
     CryptoAlgorithm,
 };
+use prism_client::{
+    PrismApi,
+    SigningKey,
+};
 
-struct VerifyWalletAminoSignatureResult {
-    pub user_vk: VerifyingKey,
-    pub signature: Signature,
+use prism_prover::Prover;
+use std::sync::Arc;
+use keystore_rs::KeyStore as _;
+
+pub struct AuthService {
+    prover: Arc<Prover>,
 }
 
-
-pub struct AuthService;
-
-fn generate_amino_message(signer: &str, data: &str) -> String {
-    format!(
-        "{{\"account_number\":\"0\",\"chain_id\":\"\",\"fee\":{{\"amount\":[],\"gas\":\"0\"}},\
-        \"memo\":\"\",\"msgs\":[{{\"type\":\"sign/MsgSignData\",\"value\":{{\"data\":\"{}\",\
-        \"signer\":\"{}\"}}}}],\"sequence\":\"0\"}}",
-        data, signer
-    )
+pub struct PreparedAuthData {
+    pub data: Vec<u8>
 }
 
 impl AuthService {
-    pub fn verify_wallet_signature(payload: &AuthWalletRequestDto) -> Result<VerifyWalletAminoSignatureResult, AuthError> {
-        let signature_bytes = base64::decode(&payload.signature)?;
-        let rpc_signature_to_compare = hex::encode(signature_bytes);
-        let signature = ecdsa::Signature::from_str(&rpc_signature_to_compare)
-            .map_err(|e| AuthError::SignatureError(e.to_string()))?;
+    pub fn new(prover: Arc<Prover>) -> Self {
+        Self { prover }
+    }
 
-        let message = generate_amino_message(&payload.signer, &base64::encode(&payload.data));
-        let digest = Sha256::new_with_prefix(message.as_str());
+    pub fn prepare_auth_data(self: &Self, signer: String, public_key: String) -> Result<PreparedAuthData, AuthError> {
+        let service_keystore = KeyChain
+            .get_or_create_signing_key(SERVICE_ID)
+            .map_err(|e| AuthError::KeyStoreError(e.to_string()))?;
 
-        let pk = PublicKey::from_raw_secp256k1(
-            base64::decode(&payload.public_key)?.as_slice()
+        let service_sk = SigningKey::Ed25519(Box::new(service_keystore));
+        let user_pk = PublicKey::from_raw_secp256k1(
+            base64::decode(&public_key)?.as_slice()
         ).ok_or(AuthError::PublicKeyError)?;
         
-        let vk  = pk.secp256k1()
+        let vk  = user_pk.secp256k1()
             .ok_or_else(|| AuthError::PublicKeyError)?;
+        let user_vk = VerifyingKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, vk.to_bytes().as_slice()).unwrap();
 
-        vk.verify_digest(digest, &signature)
-            .map_err(|_| AuthError::SignatureError("Invalid signature".to_string()))?;
+        let unsigned_tx = self.prover
+            .build_request()
+            .create_account()
+            .with_id(signer.clone())
+            .with_key(user_vk)
+            .for_service_with_id(SERVICE_ID.to_string())
+            .meeting_signed_challenge(&service_sk)
+            .map_err(|e| AuthError::PrepareAuthDataError(e.to_string()))?
+            .transaction();
 
-        Ok(VerifyWalletAminoSignatureResult {
-            user_vk: VerifyingKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, vk.to_bytes().as_slice()).unwrap(),
-            signature: Signature::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, signature.to_vec().as_slice()).unwrap(),
+        let bytes_to_sign = unsigned_tx.signing_payload()?;
+
+        Ok(PreparedAuthData {
+            data: bytes_to_sign,
         })
     }
 }

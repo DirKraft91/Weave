@@ -1,46 +1,63 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Button, Modal, ModalBody, ModalContent, ModalHeader, addToast } from '@heroui/react';
+import { Button, Modal, ModalBody, ModalContent, ModalHeader, addToast, closeAll } from '@heroui/react';
 import { useNavigate } from '@tanstack/react-router';
 
 import Logo from '@/assets/Logo.svg?react';
 import { useChainStore } from '@/contexts';
 import { authStore } from '@/contexts/auth';
-import { useAsyncExecutor } from '@/hooks/useAsyncExecutor';
 import { authService } from '@/services/auth.service';
 import Icon from './assets/Icon.png';
 import { useSignArbitrary } from '@/hooks/useSignArbitrary';
+import { useWalletClient } from '@/hooks/useWalletClient';
+import { useMutation } from '@tanstack/react-query';
 
 export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { selectedChain } = useChainStore();
   const navigate = useNavigate();
+  const { client } = useWalletClient();
   const { sign } = useSignArbitrary();
 
-  const signIn = useAsyncExecutor(async () => {
+  const fetchAuthData = async () => {
     try {
-      const data = JSON.stringify({
-        chain_id: selectedChain,
-        nonce: Date.now().toString(),
-        message: 'Authentication request',
-      });
-      const { signResult, account } = await sign(data);
+      const account = await client?.getAccount?.(selectedChain);
 
+      if (!account) {
+        throw new Error('Could not retrieve account');
+      }
+
+      const data = await authService.prepareAuthData({
+        signer: account.address,
+        public_key: btoa(String.fromCharCode(...new Uint8Array(account.pubkey))),
+      });
+
+      const result = btoa(String.fromCharCode(...new Uint8Array(data)));
+
+      return result;
+    } catch (error) {
+      closeAll();
+      addToast({
+        title: 'Error',
+        description: 'Could not prepare auth data',
+        color: 'danger',
+        timeout: 3000,
+        priority: 0,
+      });
+      throw error;
+    }
+  };
+
+  const auth = async (dataToSign: string) => {
+    try {
+      const { signResult, account } = await sign(dataToSign);
       const response = await authService.login({
         signer: account.address,
         public_key: signResult?.pub_key.value,
         signature: signResult?.signature || '',
-        data,
+        data: dataToSign,
       });
-
-      if (!response.success) {
-        throw new Error(response.message || 'Authentication failed');
-      }
-
-      if (response.data?.accessToken) {
-        authStore.setAuthToken(response.data.accessToken);
-      }
-
+      authStore.setAuthToken(response.data.accessToken);
+      closeAll();
       onClose();
-
       addToast({
         title: 'Success',
         description: 'Authentication successful',
@@ -48,20 +65,24 @@ export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         timeout: 3000,
         priority: 0,
       });
-
       navigate({ to: '/dashboard' });
     } catch (error) {
       addToast({
         title: 'Error',
-        description:
-          error instanceof Error
-            ? `Authentication failed: ${error.message}, please try again`
-            : 'Authentication failed, please try again',
+        description: 'Authentication failed',
         color: 'danger',
         timeout: 3000,
         priority: 0,
       });
+      throw error;
     }
+  };
+
+  const signIn = useMutation({
+    mutationFn: async () => {
+      const dataToSign = await fetchAuthData();
+      await auth(dataToSign);
+    },
   });
 
   return (
@@ -88,10 +109,17 @@ export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   After connecting you will be able to approve your providers
                 </span>
                 <div className="flex items-center flex-row gap-2 px-10 w-full">
-                  <Button variant="light" onClick={onClose} isDisabled={signIn.isLoading} className="w-1/2">
+                  <Button variant="light" onClick={onClose} isDisabled={signIn.isPending} className="w-1/2">
                     Close
                   </Button>
-                  <Button variant="solid" onClick={signIn.asyncExecute} isDisabled={signIn.isLoading} className="w-1/2">
+                  <Button
+                    variant="solid"
+                    onClick={() => {
+                      signIn.mutateAsync();
+                    }}
+                    isDisabled={signIn.isPending}
+                    className="w-1/2"
+                  >
                     Sign in
                   </Button>
                 </div>

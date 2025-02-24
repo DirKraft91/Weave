@@ -9,8 +9,7 @@ interface LoginCredentials {
 
 interface AuthResponse {
   success: boolean;
-  message?: string;
-  data?: {
+  data: {
     accessToken: string;
     refreshToken: string;
   };
@@ -48,7 +47,25 @@ class AuthService {
     cookieService.delete(this.REFRESH_TOKEN_KEY);
   }
 
-  logout(): void {
+  public async prepareAuthData(payload: { signer: string; public_key: string }): Promise<number[]> {
+    const response = await fetch('http://localhost:8080/auth/prepare', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to prepare auth data');
+    }
+
+    const data = await response.json();
+
+    return data.data;
+  }
+
+  public logout(): void {
     this.clearTokens();
   }
 
@@ -70,10 +87,7 @@ class AuthService {
       const data = await response.json();
 
       if (!response.ok) {
-        return {
-          success: false,
-          message: data.message || 'Authentication failed',
-        };
+        throw new Error(data.message || 'Authentication failed');
       }
 
       if (data.access_token && data.refresh_token) {
@@ -82,18 +96,13 @@ class AuthService {
 
       return {
         success: data.success ?? true,
-        message: data.message || 'Successfully logged in',
         data: {
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
         },
       };
     } catch (error) {
-      console.error('Login error:', error);
-      return {
-        success: false,
-        message: (error as Error).message || 'Network error occurred',
-      };
+      throw new Error((error as Error).message || 'Network error occurred');
     }
   }
 
@@ -116,7 +125,6 @@ class AuthService {
       if (!response.ok) {
         if (response.status === 401) {
           this.clearTokens();
-          console.log('Session expired');
           return false;
         }
         return false;

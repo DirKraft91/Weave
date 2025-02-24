@@ -9,9 +9,6 @@ pub enum UserError {
     #[error("Key store error: {0}")]
     KeyStoreError(String),
 
-    #[error("Signature error: {0}")]
-    SignatureError(String),
-
     #[error("Transaction error: {0}")]
     TransactionError(String),
 }
@@ -23,8 +20,7 @@ impl axum::response::IntoResponse for UserError {
                 axum::http::StatusCode::NOT_FOUND,
                 self.to_string(),
             ),
-            UserError::KeyStoreError(_) |
-            UserError::SignatureError(_) => (
+            UserError::KeyStoreError(_) => (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 self.to_string(),
             ),

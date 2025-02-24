@@ -75,4 +75,3 @@ impl UserAminoSignedRecord {
         }
     }
 }
-

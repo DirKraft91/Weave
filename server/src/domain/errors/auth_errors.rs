@@ -1,13 +1,10 @@
 use thiserror::Error;
-use crate::domain::errors::user_errors::UserError;
+use prism_client::TransactionError;
 
 #[derive(Debug, Error)]
 pub enum AuthError {
-    #[error("Invalid signature: {0}")]
-    SignatureError(String),
-
-    #[error("Failed to create account: {0}")]
-    AccountCreationError(String),
+    #[error("Key store error: {0}")]
+    KeyStoreError(String),
 
     #[error("Failed to generate token: {0}")]
     TokenGenerationError(String),
@@ -24,18 +21,13 @@ pub enum AuthError {
     #[error("Token validation error: {0}")]
     TokenValidationError(String),
 
-    #[error(transparent)]
-    UserError(#[from] UserError),
+    #[error("Failed to prepare auth data: {0}")]
+    PrepareAuthDataError(String),
 }
 
 impl axum::response::IntoResponse for AuthError {
     fn into_response(self) -> axum::response::Response {
         let (status, error_message) = match self {
-            AuthError::SignatureError(_) => (
-                axum::http::StatusCode::UNAUTHORIZED,
-                self.to_string(),
-            ),
-            AuthError::AccountCreationError(_) |
             AuthError::TokenGenerationError(_) => (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 self.to_string(),
@@ -52,5 +44,11 @@ impl axum::response::IntoResponse for AuthError {
             [(axum::http::header::CONTENT_TYPE, "application/json")],
             axum::Json(serde_json::json!({ "error": error_message })),
         ).into_response()
+    }
+}
+
+impl From<TransactionError> for AuthError {
+    fn from(error: TransactionError) -> Self {
+        AuthError::PrepareAuthDataError(error.to_string())
     }
 }

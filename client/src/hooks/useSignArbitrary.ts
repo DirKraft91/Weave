@@ -15,6 +15,7 @@ export const useSignArbitrary = () => {
     if (!account) {
       throw new Error('Could not retrieve account');
     }
+
     const signResult = await client?.signArbitrary?.(selectedChain, account.address, data);
 
     return {
