@@ -6,7 +6,7 @@ import QRCode from 'react-qr-code';
 import { Provider } from '../ProviderCard';
 import { useAsyncExecutor } from '@/hooks/useAsyncExecutor';
 import { useSignArbitrary } from '@/hooks/useSignArbitrary';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Proof } from '@/services/proof.service';
 interface ProofModalProps {
   isOpen: boolean;
@@ -17,6 +17,8 @@ interface ProofModalProps {
 export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
   const [requestUrl, setRequestUrl] = useState('');
   const signArbitrary = useSignArbitrary();
+  const client = useQueryClient();
+
   const saveProofMutation = useMutation({
     mutationFn: async (proof: Proof) => {
       const proofCopy = { ...proof, publicData: undefined };
@@ -29,6 +31,9 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
           signature: signResult?.signature || '',
           data: proofCopy,
           provider: provider.id,
+        });
+        client.invalidateQueries({
+          queryKey: ['my-proofs'],
         });
         closeAll();
         addToast({
