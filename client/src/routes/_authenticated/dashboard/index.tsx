@@ -1,5 +1,6 @@
 import { ProofModal } from '@/components/ProofModal';
 import { Provider, ProviderCard } from '@/components/ProviderCard/ProviderCard';
+import { PROVIDERS } from '@/config';
 import { userService } from '@/services/user.service';
 import { useDisclosure } from '@heroui/react';
 import { useQuery } from '@tanstack/react-query';
@@ -9,38 +10,15 @@ import { FaGithub, FaLinkedin } from 'react-icons/fa';
 import { FaSquareXTwitter } from 'react-icons/fa6';
 import { FcGoogle } from 'react-icons/fc';
 
-const providers: Provider[] = [
-  {
-    id: 'twitter',
-    name: 'X',
-    domain: 'x.com',
-    icon: FaSquareXTwitter,
-    link: 'https://x.com',
-  },
-  {
-    id: 'google',
-    name: 'Google',
-    domain: 'gmail.com',
-    icon: FcGoogle,
-    isVerified: true,
-    value: 'Username@gmail.com',
-    link: 'https://gmail.com',
-  },
-  {
-    id: 'linkedin',
-    name: 'Linkedin',
-    domain: 'linkedin.com',
-    icon: FaLinkedin,
-    link: 'https://linkedin.com',
-  },
-  {
-    id: 'github',
-    name: 'Github',
-    domain: 'github.com',
-    icon: FaGithub,
-    link: 'https://github.com',
-  },
-];
+const providers = PROVIDERS.map(provider => ({
+  ...provider,
+  icon: {
+    twitter: FaSquareXTwitter,
+    google: FcGoogle,
+    linkedin: FaLinkedin,
+    github: FaGithub,
+  }[provider.id],
+}));
 
 function DashboardComponent() {
   const proofModal = useDisclosure();

@@ -1,3 +1,4 @@
+import { API_URL, AUTH_CONFIG } from '@/config';
 import { cookieService } from './cookie.service';
 
 interface LoginCredentials {
@@ -17,10 +18,10 @@ interface AuthResponse {
 
 class AuthService {
   private static instance: AuthService;
-  private readonly ACCESS_TOKEN_KEY = 'access_token';
-  private readonly REFRESH_TOKEN_KEY = 'refresh_token';
+  private readonly ACCESS_TOKEN_KEY = AUTH_CONFIG.ACCESS_TOKEN_KEY;
+  private readonly REFRESH_TOKEN_KEY = AUTH_CONFIG.REFRESH_TOKEN_KEY;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -38,8 +39,8 @@ class AuthService {
   }
 
   private setTokens(accessToken: string, refreshToken: string): void {
-    cookieService.set(this.ACCESS_TOKEN_KEY, accessToken, 1); // 1 day
-    cookieService.set(this.REFRESH_TOKEN_KEY, refreshToken, 7); // 7 days
+    cookieService.set(this.ACCESS_TOKEN_KEY, accessToken, AUTH_CONFIG.ACCESS_TOKEN_EXPIRY_DAYS);
+    cookieService.set(this.REFRESH_TOKEN_KEY, refreshToken, AUTH_CONFIG.REFRESH_TOKEN_EXPIRY_DAYS);
   }
 
   private clearTokens(): void {
@@ -48,7 +49,7 @@ class AuthService {
   }
 
   public async prepareAuthData(payload: { signer: string; public_key: string }): Promise<number[]> {
-    const response = await fetch('http://localhost:8080/auth/prepare', {
+    const response = await fetch(`${API_URL}/auth/prepare`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -71,7 +72,7 @@ class AuthService {
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const response = await fetch('http://localhost:8080/auth', {
+      const response = await fetch(`${API_URL}/auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ class AuthService {
         return false;
       }
 
-      const response = await fetch('http://localhost:8080/auth/refresh', {
+      const response = await fetch(`${API_URL}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
