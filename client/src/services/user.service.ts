@@ -1,8 +1,8 @@
 import { httpService } from './http.service';
 
 export interface Proof {
-  email: string;
-  username: string;
+  email?: string;
+  username?: string;
   provider: string;
   proof_identifier: string;
   created_at: number;

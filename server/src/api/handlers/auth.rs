@@ -76,7 +76,7 @@ pub async fn auth_wallet(
     }
     let user_service = UserService::new(state.prover, body.signer.clone());
 
-    match user_service.create_user_account(user_record.signature_bundle).await {
+    match user_service.create_user_account(user_record).await {
         Ok(_) => {
             // Get the current timestamp safely
             let created_at = get_current_time();

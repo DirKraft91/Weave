@@ -12,9 +12,11 @@ interface ProofResponse {
 
 class ProofService {
   async initializeVerificationRequest({
+    providerId,
     onSuccess,
     onError,
   }: {
+    providerId: string;
     onSuccess: (proof: Proof) => Promise<void>;
     onError: (error: Error) => Promise<void>;
   }): Promise<string> {
@@ -22,7 +24,7 @@ class ProofService {
     const reclaimProofRequest = await ReclaimProofRequest.init(
       RECLAIM_CONFIG.APP_ID,
       RECLAIM_CONFIG.APP_SECRET,
-      RECLAIM_CONFIG.PROVIDER_ID
+      providerId,
     );
 
     // Generate the verification request URL

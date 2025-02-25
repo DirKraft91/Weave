@@ -2,7 +2,6 @@ import SpiderInteresting from '@/assets/spider-interesting.png';
 import SpiderSad from '@/assets/spider-sad.png';
 import { ProviderCard } from '@/components/ProviderCard';
 import { SearchInput } from '@/components/SearchInput/SearchInput';
-import { SEARCH_CONFIG } from '@/config';
 import { userService } from '@/services/user.service';
 import { getProviderIcon } from '@/utils/provider';
 import { addToast } from '@heroui/react';
@@ -44,7 +43,7 @@ function SearchComponent() {
             onSearch={handleSearch}
             placeholder="Enter wallet address"
             isLoading={userProofsQuery.isFetching}
-            debounceMs={SEARCH_CONFIG.DEBOUNCE_MS}
+            debounceMs={500}
           />
         </div>
         {(userProofsQuery.data?.proofs?.length ?? 0) > 0 && (

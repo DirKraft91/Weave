@@ -11,6 +11,9 @@ pub enum UserError {
 
     #[error("Transaction error: {0}")]
     TransactionError(String),
+
+    #[error("Invalid signature: {0}")]
+    InvalidSignature(String),
 }
 
 impl axum::response::IntoResponse for UserError {
@@ -27,6 +30,10 @@ impl axum::response::IntoResponse for UserError {
             UserError::TransactionError(_) => (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 self.to_string(),
+            ),
+            UserError::InvalidSignature(message) => (
+                axum::http::StatusCode::BAD_REQUEST,
+                message,
             ),
         };
 

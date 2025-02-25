@@ -8,6 +8,7 @@ export interface Provider {
   id: string;
   name: string;
   icon: IconType;
+  providerId: string;
   iconClassName?: string;
   isVerified?: boolean;
   value?: string;

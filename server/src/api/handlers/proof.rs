@@ -17,7 +17,6 @@ use crate::{
 use crate::api::dto::response::proof_res::{ApplyProofResponseDto, ProofStatsResponseDto};
 use crate::services::proof_service::ProofService;
 use crate::services::user_service::UserService;
-use base64;
 
 use super::auth::AppState;
 
@@ -32,7 +31,7 @@ pub async fn add_proof(
         provider: payload.provider.clone(),
         validator: ReclaimProofValidator,
     };
-    match proof_service.validate_and_get_identity_record().await {
+    let identity_record = match proof_service.validate_and_get_identity_record().await {
         Ok(data) => data,   
         Err(e) => return e.into_response(),
     };

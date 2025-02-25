@@ -58,6 +58,7 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
   });
   const verificationRequest = useAsyncExecutor(async () => {
     const url = await proofService.initializeVerificationRequest({
+      providerId: provider.providerId,
       onSuccess: async (proof: Proof) => {
         await saveProofMutation.mutateAsync(proof);
       },

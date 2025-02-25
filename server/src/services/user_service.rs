@@ -4,7 +4,7 @@ use keystore_rs::{KeyChain, KeyStore as _};
 use log::debug;
 
 use prism_client::{
-    Account, PendingTransaction as _, PrismApi, SignatureBundle,
+    Account, PendingTransaction, PrismApi, SignatureBundle,
     SigningKey,
 };
 use crate::domain::{
@@ -67,31 +67,48 @@ impl UserService {
         }
     }
 
-    pub async fn create_user_account(self: &Self, signature_bundle: SignatureBundle) -> Result<Account, UserError> {
+    pub async fn create_user_account(self: &Self, user_record: UserRecord) -> Result<Account, UserError> {
         if let Some(account) = self.prover.get_account(&self.user_id).await?.account {
             debug!("Account {} exists already", &self.user_id);
             return Ok(account);
         }
+
+        // user verification signature
+        user_record.signature_bundle.verifying_key.verify_signature(&user_record.user_data, &user_record.signature_bundle.signature)
+            .map_err(|_| UserError::InvalidSignature(format!("Invalid signature: {:?}", user_record.signature_bundle.signature)))?;
+
         let service_keystore = KeyChain
             .get_or_create_signing_key(SERVICE_ID)
             .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
-    
+
         let service_sk = SigningKey::Ed25519(Box::new(service_keystore));
-        let unsigned_tx = self.prover
-            .build_request()
-            .create_account()
-            .with_id(self.user_id.clone())
-            .with_key(signature_bundle.verifying_key.clone())
-            .for_service_with_id(SERVICE_ID.to_string())
-            .meeting_signed_challenge(&service_sk)
-            .map_err(|e| UserError::TransactionError(e.to_string()))?
-            .transaction();
 
+        let user_keystore = KeyChain
+            .get_signing_key(&format!("{}/{}", self.user_id.clone(), SERVICE_ID))
+            .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
+        let user_sk = SigningKey::Ed25519(Box::new(user_keystore));
 
-        let tx = unsigned_tx.externally_signed(signature_bundle.clone());
-        let new_account = self.prover.post_transaction(tx).await?
+        let new_account = self.prover
+            .create_account(self.user_id.clone(), SERVICE_ID.to_string(), &service_sk, &user_sk)
+            .await?
             .wait()
             .await?;
+
+        // let unsigned_tx = self.prover
+        //     .build_request()
+        //     .create_account()
+        //     .with_id(self.user_id.clone())
+        //     .with_key(signature_bundle.verifying_key.clone())
+        //     .for_service_with_id(SERVICE_ID.to_string())
+        //     .meeting_signed_challenge(&service_sk)
+        //     .map_err(|e| UserError::TransactionError(e.to_string()))?
+        //     .transaction();
+
+
+        // let tx = unsigned_tx.externally_signed(signature_bundle.clone());
+        // let new_account = self.prover.post_transaction(tx).await?
+        //     .wait()
+        //     .await?;
 
 
         Ok(new_account)     
