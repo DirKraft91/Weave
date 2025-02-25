@@ -16,7 +16,7 @@ use anyhow::{anyhow, Result};
 
 use crate::SERVICE_ID;
 
-async fn register_service(prover: Arc<Prover>) -> Result<()> {
+pub async fn register_service(prover: Arc<Prover>) -> Result<()> {
     // First, we make sure the service is not already registered.
     if prover.get_account(SERVICE_ID).await?.account.is_some() {
         debug!("Service already registered.");
@@ -44,40 +44,4 @@ async fn register_service(prover: Arc<Prover>) -> Result<()> {
         .await?;
 
     Ok(())
-}
-
-pub fn create_prover_server() -> Arc<Prover> {
-    let db = InMemoryDatabase::new();
-    let (da_layer, _, _) = InMemoryDataAvailabilityLayer::new(5);
-    let keystore_sk = match KeyChain.get_or_create_signing_key(SERVICE_ID) {
-        Ok(sk) => sk,
-        Err(e) => panic!("Error getting key from keychain: {}", e),
-    };
-    let sk = SigningKey::Ed25519(Box::new(keystore_sk.clone()));
-    let cfg = Config {
-        prover: true,
-        batcher: true,
-        webserver: WebServerConfig {
-            enabled: true,
-            host: "127.0.0.1".to_string(),
-            port: 50524,
-        },
-        signing_key: sk.clone(),
-        verifying_key: sk.verifying_key(),
-        start_height: 1,
-    };
-
-    return Arc::new(
-        Prover::new(
-            Arc::new(Box::new(db)),
-            Arc::new(da_layer) as Arc<dyn DataAvailabilityLayer>,
-            &cfg,
-        )
-        .unwrap(),
-    );
-}
-
-pub async fn start_prover_server(prover: Arc<Prover>) -> Result<()> {
-    register_service(prover.clone()).await?;
-    prover.clone().run().await
 }

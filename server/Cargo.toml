@@ -23,9 +23,9 @@ k256 = "0.11.6"
 tendermint = { version =  "0.28.0", features = ["secp256k1"] }
 chrono = "0.4.39"
 jsonwebtoken = "9.2"
-prism-prover = { git = "https://github.com/deltadevsde/prism", branch = "main", features = ["mock_prover"]}
-prism-common = { git = "https://github.com/deltadevsde/prism", branch = "main" }
-prism-tree = { git = "https://github.com/deltadevsde/prism", branch = "main" }
+prism-prover = { git = "https://github.com/deltadevsde/prism", branch = "main", features = [
+    "mock_prover",
+]}
 prism-storage = { git = "https://github.com/deltadevsde/prism", branch = "main" }
 prism-da = { git = "https://github.com/deltadevsde/prism", branch = "main" }
 prism-client = { git = "https://github.com/deltadevsde/prism", branch = "main" }
