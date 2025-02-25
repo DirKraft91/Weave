@@ -1,8 +1,8 @@
-import { addToast, closeAll, Button, Card, CardFooter, CardHeader, Divider, Skeleton } from '@heroui/react';
-import { Link } from '@tanstack/react-router';
-import { HiOutlineClipboardCopy } from 'react-icons/hi';
-import { IconType } from 'react-icons';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
+import { addToast, Button, Card, CardFooter, CardHeader, closeAll, Divider, Skeleton } from '@heroui/react';
+import { Link } from '@tanstack/react-router';
+import { IconType } from 'react-icons';
+import { HiOutlineClipboardCopy } from 'react-icons/hi';
 
 export interface Provider {
   id: string;
@@ -86,8 +86,8 @@ export function ProviderCard({ provider, onVerify }: ProviderCardProps) {
             {provider.value}
           </Button>
         ) : (
-          <Button className="w-full" variant="bordered" color="secondary" onClick={() => onVerify?.(provider)}>
-            Approve username
+          <Button className="w-full hover:bg-secondary hover:text-white" variant="bordered" color="secondary" onClick={() => onVerify?.(provider)}>
+            Approve
           </Button>
         )}
       </CardFooter>
