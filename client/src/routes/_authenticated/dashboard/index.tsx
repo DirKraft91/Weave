@@ -10,7 +10,7 @@ import { FaGithub, FaLinkedin } from 'react-icons/fa';
 import { FaSquareXTwitter } from 'react-icons/fa6';
 import { FcGoogle } from 'react-icons/fc';
 
-const providers = PROVIDERS.map(provider => ({
+const providers = PROVIDERS.map((provider) => ({
   ...provider,
   icon: {
     twitter: FaSquareXTwitter,
@@ -26,9 +26,8 @@ function DashboardComponent() {
 
   const meProofsQuery = useQuery({
     queryKey: ['my-proofs'],
-    queryFn: () => {
-      return userService.fetchMe();
-    },
+    queryFn: userService.fetchMe,
+    refetchInterval: 10_000,
   });
 
   const currentProviders = providers.map((provider) => {

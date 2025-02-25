@@ -16,6 +16,7 @@ class HttpService {
 
     this.axios.interceptors.request.use((config) => {
       const token = authService.getAccessToken();
+      console.log('token', token);
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -43,7 +44,7 @@ class HttpService {
         }
 
         return Promise.reject(error);
-      }
+      },
     );
   }
 

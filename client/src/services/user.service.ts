@@ -27,20 +27,12 @@ class UserService {
     return UserService.instance;
   }
 
-  async fetchMe(): Promise<UserResponse['data']> {
-    const response = await httpService.get<UserResponse>(`/me`);
-    if (!response.data) {
-      throw new Error('No data found');
-    }
-    return response.data;
+  fetchMe(): Promise<UserResponse['data']> {
+    return httpService.get<UserResponse['data']>(`/me`);
   }
 
-  async fetchUserByAddress(address: string): Promise<UserResponse['data']> {
-    const response = await httpService.get<UserResponse>(`/user/${address}`);
-    if (!response.data) {
-      throw new Error('No data found');
-    }
-    return response.data;
+  fetchUserByAddress(address: string): Promise<UserResponse['data']> {
+    return httpService.get<UserResponse['data']>(`/user/${address}`);
   }
 }
 

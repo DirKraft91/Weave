@@ -59,6 +59,7 @@ function SearchComponent() {
                   domain: proof.provider.toLowerCase() + '.com',
                   link: `https://${proof.provider.toLowerCase()}.com`,
                   value: proof.username || proof.email,
+                  providerId: proof.provider,
                 }}
               />
             ))}
