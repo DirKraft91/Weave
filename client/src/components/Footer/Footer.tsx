@@ -10,7 +10,7 @@ export const Footer = () => {
         <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
           <FaXTwitter size={20} />
         </a>
-        <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+        <a href="https://github.com/DirKraft91/Weave" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
           <FaGithub size={20} />
         </a>
       </div>
