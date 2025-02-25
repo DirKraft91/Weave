@@ -4,12 +4,6 @@ import { httpService } from './http.service';
 
 export type Proof = ReclaimProof;
 
-interface ProofResponse {
-  data: {
-    success: boolean;
-  };
-}
-
 class ProofService {
   async initializeVerificationRequest({
     providerId,
@@ -41,20 +35,27 @@ class ProofService {
     return requestUrl;
   }
 
-  async saveProof(data: {
+  async prepareProof(payload: { proof: Proof; provider_id: string; signer: string }): Promise<{
+    data: number[];
+    signer: string;
+  }> {
+    return await httpService.post<{
+      data: number[];
+      signer: string;
+    }>('/proof/prepare', payload);
+  }
+
+  async applyProof(payload: {
     public_key: string;
     signature: string;
     signer: string;
-    data: Proof;
-    provider: string;
-  }): Promise<boolean> {
-    try {
-      const response = await httpService.post<ProofResponse>('/proof', data);
-      return response.data.success;
-    } catch (error) {
-      console.error('Error saving proof:', error);
-      throw error;
-    }
+    data: string;
+    proof: Proof;
+    provider_id: string;
+  }): Promise<{ success: boolean }> {
+    return await httpService.post<{
+      success: boolean;
+    }>('/proof', payload);
   }
 }
 

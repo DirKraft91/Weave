@@ -1,20 +1,58 @@
 use tendermint::PublicKey;
-use crate::domain::models::proof::IdentityRecord;
 use prism_client::SignatureBundle;
 use prism_keys::{
     Signature,
     VerifyingKey,
     CryptoAlgorithm,
 };
+use serde::{Deserialize, Serialize};
+use reclaim_rust_sdk::Proof as ReclaimProof;
+use std::collections::HashMap;
+
+use crate::utils::arbitrary_message::to_arbitrary_message_bytes;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UserIdentityRecord {
+    proof_identifier: String,
+    public_data: Option<HashMap<String, String>>,
+    provider_id: String,
+    claim_data_params: String,
+    created_at: i64,
+}
+
+impl UserIdentityRecord {
+    pub fn new(proof: ReclaimProof, created_at: i64, provider_id: String) -> Self {
+        let public_data = proof.public_data.clone();
+        Self {
+            proof_identifier: proof.identifier,
+            provider_id,
+            created_at,
+            public_data: public_data,
+            claim_data_params: proof.claim_data.parameters,
+        }
+    }
+}
 
 pub struct User {
     pub id: String,
-    pub identity_records: Vec<IdentityRecord>,
+    pub identity_records: Vec<UserIdentityRecord>,
 }
 
 impl User {
-    pub fn new(id: String, identity_records: Vec<IdentityRecord>) -> Self {
+    pub fn new(id: String, identity_records: Vec<UserIdentityRecord>) -> Self {
         Self { id, identity_records }
+    }
+}
+
+pub struct UserRecord {
+    pub signature_bundle: SignatureBundle,
+    pub user_data: Vec<u8>,
+    pub user_id: String,
+}
+
+impl UserRecord {
+    pub fn new(signature_bundle: SignatureBundle, user_data: Vec<u8>, user_id: String) -> Self {
+        Self { signature_bundle, user_data, user_id }
     }
 }
 
@@ -26,24 +64,9 @@ pub struct UserAminoSignedRecord {
     pub data: String,
 }
 
-pub struct UserRecord {
-    pub signature_bundle: SignatureBundle,
-    pub user_data: Vec<u8>,
-    pub user_id: String,
-}
-
 impl UserAminoSignedRecord {
     pub fn new(public_key: String, signature: String, signer: String, data: String) -> Self {
         Self { public_key, signature, signer, data }
-    }
-
-    fn generate_amino_message(signer: &str, data: &str) -> String {
-        format!(
-            "{{\"account_number\":\"0\",\"chain_id\":\"\",\"fee\":{{\"amount\":[],\"gas\":\"0\"}},\
-            \"memo\":\"\",\"msgs\":[{{\"type\":\"sign/MsgSignData\",\"value\":{{\"data\":\"{}\",\
-            \"signer\":\"{}\"}}}}],\"sequence\":\"0\"}}",
-            data, signer
-        )
     }
 
     fn to_signature_bundle(&self) -> SignatureBundle {
@@ -57,21 +80,17 @@ impl UserAminoSignedRecord {
         ).expect("Failed to create public key");
         let vk = pk.secp256k1().expect("Failed to get secp256k1 key");
 
-        SignatureBundle {
-            verifying_key: VerifyingKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, vk.to_bytes().as_slice())
+        SignatureBundle::new(
+            VerifyingKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, vk.to_bytes().as_slice())
                 .expect("Failed to create verifying key"),
-            signature: Signature::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &signature_bytes)
+            Signature::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &signature_bytes)
                 .expect("Failed to create signature"),
-        }
+        )
     }
 
     pub fn to_user_record(&self) -> UserRecord {
-        let amino_message = Self::generate_amino_message(&self.signer, &base64::encode(&self.data));
+        let amino_message = to_arbitrary_message_bytes(&self.signer, &self.data);
 
-        UserRecord {
-            signature_bundle: self.to_signature_bundle(),
-            user_data: amino_message.into_bytes(),
-            user_id: self.signer.clone(),
-        }
+        UserRecord::new(self.to_signature_bundle(), amino_message.into_bytes(), self.signer.clone())
     }
 }

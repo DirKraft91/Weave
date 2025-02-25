@@ -10,6 +10,7 @@ import Icon from './assets/Icon.png';
 import { useSignArbitrary } from '@/hooks/useSignArbitrary';
 import { useWalletClient } from '@/hooks/useWalletClient';
 import { useMutation } from '@tanstack/react-query';
+import { fromUint8ArrayToString } from '@/utils/fromUint8ArrayToString';
 
 export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { selectedChain } = useChainStore();
@@ -25,12 +26,12 @@ export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         throw new Error('Could not retrieve account');
       }
 
-      const data = await authService.prepareAuthData({
+      const response = await authService.prepareAuthData({
         signer: account.address,
-        public_key: btoa(String.fromCharCode(...new Uint8Array(account.pubkey))),
+        public_key: fromUint8ArrayToString(account.pubkey),
       });
 
-      const result = btoa(String.fromCharCode(...new Uint8Array(data)));
+      const result = fromUint8ArrayToString(response.data);
 
       return result;
     } catch (error) {

@@ -1,8 +1,6 @@
 use anyhow::Context;
 use log::info;
 use anyhow::Result;
-use prism_prover::Prover;
-use std::sync::Arc;
 use crate::api::routes;
 
 use super::handlers::auth::AppState;

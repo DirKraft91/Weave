@@ -29,7 +29,6 @@ use prism_client::{
 
 pub static SERVICE_ID: &str = "weave_service";
 
-
 pub async fn register_service(prover: Arc<Prover>) -> Result<()> {
     if prover.get_account(SERVICE_ID).await?.account.is_some() {
         debug!("Service already registered.");
@@ -74,7 +73,7 @@ async fn main() -> Result<()> {
     let (da_layer, _, _) = InMemoryDataAvailabilityLayer::new(5);
 
     let keystore_sk = KeyChain
-        .get_signing_key(SERVICE_ID)
+        .get_or_create_signing_key(SERVICE_ID)
         .map_err(|e| anyhow!("Error getting key from store: {}", e))?;
 
     let sk = SigningKey::Ed25519(Box::new(keystore_sk.clone()));

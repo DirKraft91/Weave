@@ -5,18 +5,6 @@ pub enum ProofError {
     #[error("Proof verification failed: {0}")]
     ProofNotVerifiedError(String),
 
-    #[error("Failed to deserialize context data: {0}")]
-    ContextDeserializationError(serde_json::Error),
-
-    #[error("email not found in context")]
-    EmailNotFound,
-
-    #[error("screen_name not found in context")]
-    ScreenNameNotFound,
-
-    #[error("username not found in context")]
-    UsernameNotFound,
-
     #[error("Serialization error: {0}")]
     SerializationError(String),
 }
@@ -25,22 +13,6 @@ impl axum::response::IntoResponse for ProofError {
     fn into_response(self) -> axum::response::Response {
         let (status, error_message) = match self {
             ProofError::ProofNotVerifiedError(_) => (
-                axum::http::StatusCode::BAD_REQUEST,
-                self.to_string(),
-            ),
-            ProofError::ContextDeserializationError(_) => (
-                axum::http::StatusCode::BAD_REQUEST,
-                self.to_string(),
-            ),
-            ProofError::EmailNotFound => (
-                axum::http::StatusCode::BAD_REQUEST,
-                self.to_string(),
-            ),
-            ProofError::ScreenNameNotFound => (
-                axum::http::StatusCode::BAD_REQUEST,
-                self.to_string(),
-            ),
-            ProofError::UsernameNotFound => (
                 axum::http::StatusCode::BAD_REQUEST,
                 self.to_string(),
             ),

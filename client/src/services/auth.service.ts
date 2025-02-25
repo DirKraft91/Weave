@@ -21,7 +21,7 @@ class AuthService {
   private readonly ACCESS_TOKEN_KEY = AUTH_CONFIG.ACCESS_TOKEN_KEY;
   private readonly REFRESH_TOKEN_KEY = AUTH_CONFIG.REFRESH_TOKEN_KEY;
 
-  private constructor() { }
+  private constructor() {}
 
   public static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -48,7 +48,10 @@ class AuthService {
     cookieService.delete(this.REFRESH_TOKEN_KEY);
   }
 
-  public async prepareAuthData(payload: { signer: string; public_key: string }): Promise<number[]> {
+  public async prepareAuthData(payload: { signer: string; public_key: string }): Promise<{
+    data: number[];
+    signer: string;
+  }> {
     const response = await fetch(`${API_URL}/auth/prepare`, {
       method: 'POST',
       headers: {
@@ -61,9 +64,7 @@ class AuthService {
       throw new Error('Failed to prepare auth data');
     }
 
-    const data = await response.json();
-
-    return data.data;
+    return await response.json();
   }
 
   public logout(): void {

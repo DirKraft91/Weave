@@ -9,7 +9,7 @@ pub struct AuthWalletRequestDto {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PrepareAuthDataRequestDto {
+pub struct PrepareAuthRequestDto {
     pub public_key: String,
     pub signer: String,
 }

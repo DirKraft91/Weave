@@ -2,12 +2,26 @@ import SpiderInteresting from '@/assets/spider-interesting.png';
 import SpiderSad from '@/assets/spider-sad.png';
 import { ProviderCard } from '@/components/ProviderCard';
 import { SearchInput } from '@/components/SearchInput/SearchInput';
+import { PROVIDERS } from '@/config';
 import { userService } from '@/services/user.service';
-import { getProviderIcon } from '@/utils/provider';
 import { addToast } from '@heroui/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { FaGithub } from 'react-icons/fa';
 import { useState } from 'react';
+import { FaLinkedin } from 'react-icons/fa';
+import { FaSquareXTwitter } from 'react-icons/fa6';
+import { FcGoogle } from 'react-icons/fc';
+
+const providers = PROVIDERS.map((provider) => ({
+  ...provider,
+  icon: {
+    twitter: FaSquareXTwitter,
+    google: FcGoogle,
+    linkedin: FaLinkedin,
+    github: FaGithub,
+  }[provider.id],
+}));
 
 function SearchComponent() {
   const [address, setAddress] = useState('');
@@ -28,7 +42,16 @@ function SearchComponent() {
     },
     enabled: !!address,
   });
-  const isNotFound = userProofsQuery.data?.proofs?.length === 0;
+  const isNotFound = userProofsQuery.data?.identity_records?.length === 0;
+  const currentProviders = providers.map((provider) => {
+    const record = userProofsQuery.data?.identity_records.find((record) => record.provider_id === provider.providerId);
+    return {
+      ...provider,
+      isVerified: !!record,
+      value: '',
+      // value: proof?.public_data.username || proof?.public_data.email, // @TODO: need to parse claim_data_params
+    };
+  });
 
   const handleSearch = (query: string) => {
     setAddress(query);
@@ -46,25 +69,25 @@ function SearchComponent() {
             debounceMs={500}
           />
         </div>
-        {(userProofsQuery.data?.proofs?.length ?? 0) > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {userProofsQuery.data?.proofs?.map((proof, index) => (
-              <ProviderCard
-                key={index}
-                provider={{
-                  id: proof.proof_identifier,
-                  name: proof.provider,
-                  icon: getProviderIcon(proof.provider),
-                  isVerified: true,
-                  domain: proof.provider.toLowerCase() + '.com',
-                  link: `https://${proof.provider.toLowerCase()}.com`,
-                  value: proof.username || proof.email,
-                  providerId: proof.provider,
-                }}
-              />
-            ))}
-          </div>
-        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {currentProviders.map((provider, index) => (
+            <ProviderCard
+              key={index}
+              provider={{
+                id: provider.providerId,
+                name: provider.name,
+                icon: provider.icon,
+                isVerified: true,
+                domain: provider.providerId.toLowerCase() + '.com',
+                link: `https://${provider.providerId.toLowerCase()}.com`,
+                value: provider.value,
+                providerId: provider.providerId,
+              }}
+            />
+          ))}
+        </div>
+
         <div className="relative flex flex-col items-center justify-center gap-8 mt-4">
           <span
             className={`text-3xl font-bold self-start transition-opacity duration-300 ${isNotFound ? 'opacity-100' : 'opacity-0'}`}

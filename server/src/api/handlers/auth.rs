@@ -9,9 +9,9 @@ use prism_prover::Prover;
 use serde_json::json;
 use crate::{
     api::dto::request::auth_req::{
-        PrepareAuthDataRequestDto, 
+        PrepareAuthRequestDto, 
         AuthWalletRequestDto
-    }, 
+    },
     domain::models::user::UserAminoSignedRecord, 
     entities::{
         account::Account as AccountEntity, 
@@ -25,6 +25,7 @@ use crate::services::user_service::UserService;
 use crate::utils::jwt::{create_access_token, create_refresh_token, decode_token, TokenType};
 use chrono::Utc;
 use log::debug;
+use base64;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -34,7 +35,7 @@ pub struct AppState {
 
 pub async fn prepare_auth_data (
     State(state): State<AppState>,
-    Json(body): Json<PrepareAuthDataRequestDto>
+    Json(body): Json<PrepareAuthRequestDto>
 ) -> Response {
     let auth_service = AuthService::new(state.prover);
     let signer = body.signer.clone();
@@ -57,8 +58,9 @@ pub async fn auth_wallet(
 ) -> Response {
     let user_amino_signed_record = UserAminoSignedRecord::new(
         body.public_key.clone(), 
-        body.signature.clone(), body.signer.clone(), 
-        body.data.clone()
+        body.signature.clone(), 
+        body.signer.clone(), 
+        base64::encode(&body.data)
     );
     let user_record = user_amino_signed_record.to_user_record();
     let data = user_record.user_data.clone();

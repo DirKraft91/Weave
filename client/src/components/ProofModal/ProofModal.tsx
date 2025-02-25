@@ -1,12 +1,17 @@
-import { useAsyncExecutor } from '@/hooks/useAsyncExecutor';
 import { useEffectOnce } from '@/hooks/useEffectOnce';
-import { useSignArbitrary } from '@/hooks/useSignArbitrary';
-import { Proof, proofService } from '@/services/proof.service';
+import { proofService } from '@/services/proof.service';
+import { Proof as ReclaimProof } from '@reclaimprotocol/js-sdk';
 import { addToast, Button, closeAll, Modal, ModalBody, ModalContent, ModalFooter } from '@heroui/react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import QRCode from 'react-qr-code';
 import { Provider } from '../ProviderCard';
+import { useSignArbitrary } from '@/hooks/useSignArbitrary';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Proof } from '@/services/proof.service';
+import { useWalletClient } from '@/hooks/useWalletClient';
+import { fromUint8ArrayToString } from '@/utils/fromUint8ArrayToString';
+import { useChainStore } from '@/contexts/chain';
+import { useAsyncExecutor } from '@/hooks/useAsyncExecutor';
 interface ProofModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -16,28 +21,46 @@ interface ProofModalProps {
 export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
   const [requestUrl, setRequestUrl] = useState('');
   const signArbitrary = useSignArbitrary();
-  const client = useQueryClient();
+  const queryClient = useQueryClient();
+  const { selectedChain } = useChainStore();
+  const { client: walletClient } = useWalletClient();
+
+  const getDataToSign = async (proof: ReclaimProof) => {
+    const proofCopy = { ...proof, publicData: undefined };
+    const account = await walletClient?.getAccount?.(selectedChain);
+    if (!account) {
+      throw new Error('Account not found');
+    }
+    const response = await proofService.prepareProof({
+      proof: proofCopy,
+      provider_id: provider.providerId,
+      signer: account.address,
+    });
+
+    return fromUint8ArrayToString(response.data);
+  };
 
   const saveProofMutation = useMutation({
     mutationFn: async (proof: Proof) => {
-      const proofCopy = { ...proof, publicData: undefined };
-
       try {
-        const { signResult, account } = await signArbitrary.sign(JSON.stringify(proofCopy));
-        await proofService.saveProof({
+        const dataToSign = await getDataToSign(proof);
+        console.log('dataToSign', dataToSign);
+        const { signResult, account } = await signArbitrary.sign(dataToSign);
+        await proofService.applyProof({
           signer: account.address,
           public_key: signResult?.pub_key.value,
           signature: signResult?.signature || '',
-          data: proofCopy,
-          provider: provider.id,
+          data: dataToSign,
+          provider_id: provider.providerId,
+          proof: { ...proof, publicData: undefined },
         });
-        client.invalidateQueries({
+        queryClient.invalidateQueries({
           queryKey: ['my-proofs'],
         });
         closeAll();
         addToast({
-          title: 'Proof saved',
-          description: 'Proof saved successfully',
+          title: 'Proof applied',
+          description: 'Proof applied successfully',
           color: 'success',
           timeout: 3000,
           priority: 0,
@@ -46,7 +69,7 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
       } catch (error) {
         closeAll();
         addToast({
-          title: 'Error saving proof',
+          title: 'Error applying proof',
           description: error instanceof Error ? error.message : 'Something went wrong',
           color: 'danger',
           timeout: 3000,
@@ -55,6 +78,7 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
       }
     },
   });
+
   const verificationRequest = useAsyncExecutor(async () => {
     const url = await proofService.initializeVerificationRequest({
       providerId: provider.providerId,

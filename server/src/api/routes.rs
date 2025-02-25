@@ -11,7 +11,7 @@ use http::{
     HeaderValue,
 };
 use crate::middleware::auth::auth_middleware;
-use crate::api::handlers::proof::{add_proof, get_proof_stats};
+use crate::api::handlers::proof::{prepare_to_apply_proof, apply_proof, get_applied_proof_stats};
 use crate::api::handlers::user::{get_user, get_me};
 use crate::api::handlers::auth::{auth_wallet, refresh_tokens, prepare_auth_data};
 
@@ -35,9 +35,9 @@ pub fn create_router(state: AppState) -> Router {
         .route("/auth/refresh", post(refresh_tokens));
 
     let protected_routes = Router::new()
-        .route("/proof-identity-record/prepare", post(add_proof))
-        .route("/proof-identity-record", post(add_proof))
-        .route("/proof-stats", post(get_proof_stats))
+        .route("/proof/prepare", post(prepare_to_apply_proof))
+        .route("/proof", post(apply_proof))
+        .route("/proof-stats", post(get_applied_proof_stats))
         .route("/me", get(get_me))
         .route("/user/:user_id", get(get_user))
         .layer(middleware::from_fn(auth_middleware));

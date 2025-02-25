@@ -31,11 +31,12 @@ function DashboardComponent() {
   });
 
   const currentProviders = providers.map((provider) => {
-    const proof = meProofsQuery.data?.proofs?.find((proof) => proof.proof_identifier === provider.id);
+    const record = meProofsQuery.data?.identity_records.find((record) => record.provider_id === provider.providerId);
     return {
       ...provider,
-      isVerified: !!proof,
-      value: proof?.username || proof?.email,
+      isVerified: !!record,
+      value: '',
+      // value: proof?.public_data.username || proof?.public_data.email, // @TODO: need to parse claim_data_params
     };
   });
 

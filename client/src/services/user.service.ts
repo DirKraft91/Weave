@@ -1,18 +1,20 @@
 import { httpService } from './http.service';
 
-export interface Proof {
-  email?: string;
-  username?: string;
-  provider: string;
+export interface UserIdentityRecord {
   proof_identifier: string;
+  public_data: Record<string, string>;
+  provider_id: string;
+  claim_data_params: string;
   created_at: number;
 }
 
+export interface User {
+  id: string;
+  identity_records: UserIdentityRecord[];
+}
+
 interface UserResponse {
-  data: {
-    id: string;
-    proofs: Proof[];
-  };
+  data: User;
 }
 
 class UserService {

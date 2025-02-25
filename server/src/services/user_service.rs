@@ -4,13 +4,12 @@ use keystore_rs::{KeyChain, KeyStore as _};
 use log::debug;
 
 use prism_client::{
-    Account, PendingTransaction, PrismApi, SigningKey,
+    Account, PendingTransaction, PrismApi, SignatureBundle, SigningKey
 };
-use crate::domain::{
+use crate::{domain::{
     errors::user_errors::UserError, 
-    models::user::{User, UserRecord},
-    models::proof::IdentityRecord
-};
+    models::user::{User, UserIdentityRecord, UserRecord},
+}, utils::arbitrary_message::from_arbitrary_message_bytes_to_data_structure};
 use crate::SERVICE_ID;
 
 pub struct UserService {
@@ -28,18 +27,16 @@ impl UserService {
             .map_err(|_| UserError::AccountNotFound(self.user_id.clone()))?;
         
         if let Some(account) = response.account {
-            let mut proofs: Vec<IdentityRecord> = Vec::new();
-            
-            for signed in account.signed_data() {
-                let raw_data: &Vec<u8> = &signed.data;
-                match serde_json::from_slice::<IdentityRecord>(raw_data) {
-                    Ok(proof_data) => {
-                        proofs.push(proof_data);
+            let mut identity_records: Vec<UserIdentityRecord> = Vec::new();
+            for signed in account.signed_data().iter() {
+                match from_arbitrary_message_bytes_to_data_structure::<UserIdentityRecord>(&signed.data.clone()) {
+                    Ok(identity_record) => {
+                        identity_records.push(identity_record);
                     },
-                    Err(e) => eprintln!("Error: {:?}, raw: {:?}", e, String::from_utf8_lossy(raw_data)),
+                    Err(e) => debug!("Error parsing arbitrary message: {:?}", e),
                 }
             }
-            return Ok(User::new(self.user_id.clone(), proofs));
+            return Ok(User::new(self.user_id.clone(), identity_records));
         }
         Err(UserError::AccountNotFound(self.user_id.clone()))
     }
@@ -49,16 +46,29 @@ impl UserService {
         user_record: UserRecord
     ) -> Result<Account, UserError> {
         if let Some(account) = self.prover.get_account(&user_record.user_id).await?.account {
-            let service_keystore = KeyChain
-                .get_or_create_signing_key(SERVICE_ID)
-                .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
+            // verify user_record.signature_bundle to be sure that client have signed data
+            match user_record.signature_bundle.verifying_key.verify_signature(&user_record.user_data, &user_record.signature_bundle.signature) {
+                Ok(_) => {
+                    debug!("Add data to user account has valid signature");
+                },
+                Err(e) => return Err(UserError::InvalidSignature(format!("Invalid signature: {:?}", e))),
+            }
 
-            let service_sk = SigningKey::Ed25519(Box::new(service_keystore));
+            let user_keystore = KeyChain
+                .get_or_create_signing_key(&format!("{}/{}", self.user_id.clone(), SERVICE_ID))
+                .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
+            let user_sk = SigningKey::Ed25519(Box::new(user_keystore));
+            let user_vk = user_sk.verifying_key();
+            let signature = user_sk.sign(&user_record.user_data);
+            let signature_bundle = SignatureBundle::new(user_vk, signature);
+
             let updated_account = self.prover
-                .add_data(&account, user_record.user_data, user_record.signature_bundle, &service_sk)
+                .add_data(&account, user_record.user_data.clone(), signature_bundle, &user_sk)
                 .await?
                 .wait()
                 .await?;
+
+            println!("updated_account: {:?}", updated_account);
 
             Ok(updated_account)
         } else {
@@ -71,8 +81,7 @@ impl UserService {
             debug!("Account {} exists already", &self.user_id);
             return Ok(account);
         }
-
-        // user verification signature
+        // verify user_record.signature_bundle to be sure that client have signed data
         user_record.signature_bundle.verifying_key.verify_signature(&user_record.user_data, &user_record.signature_bundle.signature)
             .map_err(|_| UserError::InvalidSignature(format!("Invalid signature: {:?}", user_record.signature_bundle.signature)))?;
 
@@ -83,7 +92,7 @@ impl UserService {
         let service_sk = SigningKey::Ed25519(Box::new(service_keystore));
 
         let user_keystore = KeyChain
-            .get_signing_key(&format!("{}/{}", self.user_id.clone(), SERVICE_ID))
+            .get_or_create_signing_key(&format!("{}/{}", self.user_id.clone(), SERVICE_ID))
             .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
         let user_sk = SigningKey::Ed25519(Box::new(user_keystore));
 
