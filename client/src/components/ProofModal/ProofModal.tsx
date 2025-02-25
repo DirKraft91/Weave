@@ -1,13 +1,12 @@
+import { useAsyncExecutor } from '@/hooks/useAsyncExecutor';
 import { useEffectOnce } from '@/hooks/useEffectOnce';
-import { proofService } from '@/services/proof.service';
+import { useSignArbitrary } from '@/hooks/useSignArbitrary';
+import { Proof, proofService } from '@/services/proof.service';
 import { addToast, Button, closeAll, Modal, ModalBody, ModalContent, ModalFooter } from '@heroui/react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import QRCode from 'react-qr-code';
 import { Provider } from '../ProviderCard';
-import { useAsyncExecutor } from '@/hooks/useAsyncExecutor';
-import { useSignArbitrary } from '@/hooks/useSignArbitrary';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Proof } from '@/services/proof.service';
 interface ProofModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -94,7 +93,9 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
         <ModalBody>
           {requestUrl && (
             <div className="w-full h-full flex justify-center items-center p-5">
-              <QRCode value={requestUrl} />
+              <div className="bg-white rounded-lg p-5">
+                <QRCode value={requestUrl} />
+              </div>
             </div>
           )}
         </ModalBody>
