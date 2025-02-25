@@ -2,6 +2,7 @@ import Logo from '@/assets/Logo.svg?react';
 import { Link } from '@tanstack/react-router';
 import { WalletConnect } from './components/Wallet';
 import { HeaderMenu } from './HeaderMenu';
+
 export const Header = () => {
   return (
     <header className="flex gap-4 py-4 z-0">
