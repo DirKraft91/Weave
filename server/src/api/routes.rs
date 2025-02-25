@@ -35,7 +35,8 @@ pub fn create_router(state: AppState) -> Router {
         .route("/auth/refresh", post(refresh_tokens));
 
     let protected_routes = Router::new()
-        .route("/proof", post(add_proof))
+        .route("/proof-identity-record/prepare", post(add_proof))
+        .route("/proof-identity-record", post(add_proof))
         .route("/proof-stats", post(get_proof_stats))
         .route("/me", get(get_me))
         .route("/user/:user_id", get(get_user))

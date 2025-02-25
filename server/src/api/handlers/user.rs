@@ -17,7 +17,7 @@ pub async fn get_user(
         Ok(user) => {
             (StatusCode::OK, Json(UserDataResponseDto {
                 id: user.id,
-                proofs: user.proofs,
+                identity_records: user.identity_records,
             })).into_response()
         }
         Err(e) => e.into_response(),
@@ -35,7 +35,7 @@ pub async fn get_me(
             
             (StatusCode::OK, Json(UserDataResponseDto {
                 id: user.id,
-                proofs: user.proofs
+                identity_records: user.identity_records
             })).into_response()
         }
         Err(e) => e.into_response(),

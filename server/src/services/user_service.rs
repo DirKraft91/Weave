@@ -4,8 +4,7 @@ use keystore_rs::{KeyChain, KeyStore as _};
 use log::debug;
 
 use prism_client::{
-    Account, PendingTransaction, PrismApi, SignatureBundle,
-    SigningKey,
+    Account, PendingTransaction, PrismApi, SigningKey,
 };
 use crate::domain::{
     errors::user_errors::UserError, 
