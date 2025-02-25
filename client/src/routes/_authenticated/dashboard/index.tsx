@@ -31,7 +31,7 @@ function DashboardComponent() {
   });
 
   const currentProviders = providers.map((provider) => {
-    const proof = meProofsQuery.data?.proofs.find((proof) => proof.proof_identifier === provider.id);
+    const proof = meProofsQuery.data?.proofs?.find((proof) => proof.proof_identifier === provider.id);
     return {
       ...provider,
       isVerified: !!proof,
