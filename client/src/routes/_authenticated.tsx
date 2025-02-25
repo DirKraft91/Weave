@@ -1,5 +1,4 @@
 import { AsideNavigation } from '@/components/AsideNavigation';
-import { Header } from '@/components/Header';
 import { useAuthStore } from '@/contexts/auth';
 import { createFileRoute, Navigate, Outlet, redirect } from '@tanstack/react-router';
 
@@ -21,7 +20,6 @@ function AuthenticatedLayout() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
       <div className="flex flex-1 gap-8 container mx-auto">
         <aside className="w-64 flex">
           <AsideNavigation />

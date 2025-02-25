@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as UnathenticatedImport } from './routes/_unathenticated'
 import { Route as AuthenticatedImport } from './routes/_authenticated'
+import { Route as R404Import } from './routes/404'
 import { Route as UnathenticatedIndexImport } from './routes/_unathenticated/index'
 import { Route as UnathenticatedHowIndexImport } from './routes/_unathenticated/how/index'
 import { Route as UnathenticatedAboutIndexImport } from './routes/_unathenticated/about/index'
@@ -28,6 +29,12 @@ const UnathenticatedRoute = UnathenticatedImport.update({
 
 const AuthenticatedRoute = AuthenticatedImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const R404Route = R404Import.update({
+  id: '/404',
+  path: '/404',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -66,6 +73,13 @@ const AuthenticatedDashboardIndexRoute =
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/404': {
+      id: '/404'
+      path: '/404'
+      fullPath: '/404'
+      preLoaderRoute: typeof R404Import
+      parentRoute: typeof rootRoute
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -151,6 +165,7 @@ const UnathenticatedRouteWithChildren = UnathenticatedRoute._addFileChildren(
 )
 
 export interface FileRoutesByFullPath {
+  '/404': typeof R404Route
   '': typeof UnathenticatedRouteWithChildren
   '/': typeof UnathenticatedIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
@@ -160,6 +175,7 @@ export interface FileRoutesByFullPath {
 }
 
 export interface FileRoutesByTo {
+  '/404': typeof R404Route
   '': typeof AuthenticatedRouteWithChildren
   '/': typeof UnathenticatedIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
@@ -170,6 +186,7 @@ export interface FileRoutesByTo {
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
+  '/404': typeof R404Route
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_unathenticated': typeof UnathenticatedRouteWithChildren
   '/_unathenticated/': typeof UnathenticatedIndexRoute
@@ -181,11 +198,12 @@ export interface FileRoutesById {
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '' | '/' | '/dashboard' | '/search' | '/about' | '/how'
+  fullPaths: '/404' | '' | '/' | '/dashboard' | '/search' | '/about' | '/how'
   fileRoutesByTo: FileRoutesByTo
-  to: '' | '/' | '/dashboard' | '/search' | '/about' | '/how'
+  to: '/404' | '' | '/' | '/dashboard' | '/search' | '/about' | '/how'
   id:
     | '__root__'
+    | '/404'
     | '/_authenticated'
     | '/_unathenticated'
     | '/_unathenticated/'
@@ -197,11 +215,13 @@ export interface FileRouteTypes {
 }
 
 export interface RootRouteChildren {
+  R404Route: typeof R404Route
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   UnathenticatedRoute: typeof UnathenticatedRouteWithChildren
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  R404Route: R404Route,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   UnathenticatedRoute: UnathenticatedRouteWithChildren,
 }
@@ -216,9 +236,13 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
+        "/404",
         "/_authenticated",
         "/_unathenticated"
       ]
+    },
+    "/404": {
+      "filePath": "404.tsx"
     },
     "/_authenticated": {
       "filePath": "_authenticated.tsx",
