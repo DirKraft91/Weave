@@ -129,3 +129,25 @@ pub enum IdentityRecord {
     Linkedin(LinkedinProviderIdentityRecord),
     Generic(GenericProviderIdentityRecord),
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct IdentityRecordV2 {
+    proof_identifier: String,
+    public_data: Option<HashMap<String, String>>,
+    provider_id: String,
+    claim_data_params: String,
+    created_at: i64,
+}
+
+impl IdentityRecordV2 {
+    pub fn new(proof: ReclaimProof, created_at: i64, provider_id: String) -> Self {
+        let public_data = proof.public_data.clone();
+        Self {
+            proof_identifier: proof.identifier,
+            provider_id,
+            created_at,
+            public_data: public_data,
+            claim_data_params: proof.claim_data.parameters,
+        }
+    }
+}
