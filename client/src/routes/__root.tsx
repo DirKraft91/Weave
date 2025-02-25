@@ -24,7 +24,7 @@ export const Route = createRootRouteWithContext<RootRouterContext>()({
         <Outlet />
       </div>
 
-      <div className="absolute w-full z-10 bottom-3">
+      <div className="fixed w-full z-10 bottom-3">
         <Footer />
       </div>
 
