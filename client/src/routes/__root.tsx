@@ -13,7 +13,7 @@ export interface RootRouterContext {
 export const Route = createRootRouteWithContext<RootRouterContext>()({
   component: () => (
     <div className="min-h-screen flex flex-col">
-      <div className="absolute w-full">
+      <div className="absolute w-full z-10">
         <Header />
       </div>
 
