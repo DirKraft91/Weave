@@ -13,14 +13,14 @@ export interface RootRouterContext {
 
 export const Route = createRootRouteWithContext<RootRouterContext>()({
   component: () => (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col h-screen overflow-hidden">
       <div className="absolute w-full z-10 top-3">
         <Header />
       </div>
 
       <Background />
 
-      <div className="relative z-1">
+      <div className="relative z-1 flex-1 overflow-y-auto overflow-x-hidden">
         <Outlet />
       </div>
 
