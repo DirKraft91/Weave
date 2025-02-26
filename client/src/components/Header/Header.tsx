@@ -1,7 +1,7 @@
 import Logo from '@/assets/Logo.svg?react';
 import { Link } from '@tanstack/react-router';
+import { HeaderMenu } from './components/HeaderMenu';
 import { WalletConnect } from './components/Wallet';
-import { HeaderMenu } from './HeaderMenu';
 
 export const Header = () => {
   return (
