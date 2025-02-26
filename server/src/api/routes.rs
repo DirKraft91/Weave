@@ -32,12 +32,12 @@ pub fn create_router(state: AppState) -> Router {
     let public_routes = Router::new()
         .route("/auth/prepare", post(prepare_auth_data))
         .route("/auth", post(auth_wallet))
-        .route("/auth/refresh", post(refresh_tokens));
+        .route("/auth/refresh", post(refresh_tokens))
+        .route("/proof-stats", post(get_applied_proof_stats));
 
     let protected_routes = Router::new()
         .route("/proof/prepare", post(prepare_to_apply_proof))
         .route("/proof", post(apply_proof))
-        .route("/proof-stats", post(get_applied_proof_stats))
         .route("/me", get(get_me))
         .route("/user/:user_id", get(get_user))
         .layer(middleware::from_fn(auth_middleware));

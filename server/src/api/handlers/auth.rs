@@ -14,8 +14,8 @@ use crate::{
     },
     domain::models::user::UserAminoSignedRecord, 
     entities::{
-        account::Account as AccountEntity, 
-        account_repo::AccountRepo
+        user::UserEntity, 
+        user_repo::UserRepo
     }, 
     services::auth_service::AuthService,
     utils::common::get_current_time
@@ -24,12 +24,11 @@ use crate::api::dto::response::auth_res::{ AuthWalletResponseDto, PrepareAuthDat
 use crate::services::user_service::UserService;
 use crate::utils::jwt::{create_access_token, create_refresh_token, decode_token, TokenType};
 use chrono::Utc;
-use log::debug;
 
 #[derive(Clone)]
 pub struct AppState {
     pub prover: Arc<Prover>,
-    pub account_repo: AccountRepo,
+    pub user_repo: UserRepo,
 }
 
 pub async fn prepare_auth_data (
@@ -62,19 +61,6 @@ pub async fn auth_wallet(
         body.data.clone()
     );
     let user_record = user_amino_signed_record.to_user_record();
-    let data = user_record.user_data.clone();
-    let signature = user_record.signature_bundle.signature.clone();
-    let verifying_key = user_record.signature_bundle.verifying_key.clone();
-    let is_valid = verifying_key.verify_signature(&data, &signature);
-
-    match is_valid {
-        Ok(_) => {
-            debug!("is_valid: {:?}", is_valid);
-        }
-        Err(e) => {
-            debug!("is_valid not valid: {:?}", e);
-        }
-    }
     let user_service = UserService::new(state.prover, body.signer.clone());
 
     match user_service.create_user_account(user_record).await {
@@ -82,16 +68,16 @@ pub async fn auth_wallet(
             // Get the current timestamp safely
             let created_at = get_current_time();
             let signer = body.signer.clone();
-            let account = AccountEntity {
+            let user = UserEntity {
                 id: signer,
-                public_key: body.public_key,
+                public_key: body.public_key.clone(),
                 created_at,
             };
 
             // Handle database insert result properly
-            match state.account_repo.insert_account(&account) {
-                Ok(_) => println!("Account inserted successfully"),
-                Err(e) => eprintln!("Failed to insert account: {}", e),
+            match state.user_repo.insert_user(&user) {
+                Ok(_) => println!("User inserted successfully"),
+                Err(e) => eprintln!("Failed to insert user: {}", e),
             }
 
             let access_token = match create_access_token(body.signer.clone()) {

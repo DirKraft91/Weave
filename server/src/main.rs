@@ -8,7 +8,6 @@ mod services;
 use api::handlers::auth::AppState;
 use diesel::MysqlConnection;
 use diesel::Connection;
-use entities::account_repo::AccountRepo;
 use tokio::spawn;
 use dotenv::dotenv;
 use std::env;
@@ -61,7 +60,7 @@ fn establish_connection() -> MysqlConnection {
 async fn main() -> Result<()> {
     dotenv().ok();
     let conn = establish_connection();
-    let repo = AccountRepo::new(conn);
+    let repo = entities::user_repo::UserRepo::new(conn);
 
     std::env::set_var(
         "RUST_LOG",
@@ -109,7 +108,7 @@ async fn main() -> Result<()> {
     });
     let state = AppState{
         prover: prover.clone(),
-        account_repo: repo,
+        user_repo: repo,
     };
     let api_server_runner_handle = spawn(async move {
         debug!("registering service");
