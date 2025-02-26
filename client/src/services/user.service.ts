@@ -20,7 +20,7 @@ interface UserResponse {
 class UserService {
   private static instance: UserService;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): UserService {
     if (!UserService.instance) {

@@ -3,6 +3,7 @@ import { addToast, Button, Card, CardFooter, CardHeader, closeAll, Divider, Skel
 import { Link } from '@tanstack/react-router';
 import { IconType } from 'react-icons';
 import { HiOutlineClipboardCopy } from 'react-icons/hi';
+import { UserStats } from '../UserStats';
 
 export interface Provider {
   id: string;
@@ -14,6 +15,8 @@ export interface Provider {
   value?: string;
   domain?: string;
   link?: string;
+  userCount?: number;
+  description?: string;
 }
 
 interface ProviderCardProps {
@@ -60,16 +63,27 @@ export function ProviderCard({ provider, onVerify }: ProviderCardProps) {
 
   return (
     <Card className="h-[208px] grid grid-rows-[min-content_auto_min-content]">
-      <CardHeader>
-        <div className="grid grid-cols-[auto_1fr] items-center gap-3">
-          <Icon className="text-5xl" />
-          <div className="grid gap-1">
-            <span className="text-white font-medium">{provider.name}</span>
-            <Link to={provider.link || '#'} className="text-sm text-content-subtle hover:text-content">
-              {provider.domain}
-            </Link>
+      <CardHeader className="flex flex-col items-start">
+        <div className="flex justify-between w-full">
+          <div className="flex items-center gap-3">
+            <Icon className="text-5xl" />
+
+            <div className="grid gap-1">
+              <span className="text-white font-medium">{provider.name}</span>
+              <Link to={provider.link || '#'} className="text-sm text-default-500 hover:text-default-600">
+                {provider.domain}
+              </Link>
+            </div>
           </div>
+
+          {provider.userCount !== undefined && (
+            <UserStats count={provider.userCount} />
+          )}
         </div>
+
+        {provider.description && (
+          <p className="text-sm text-content2-foreground mt-3">{provider.description}</p>
+        )}
       </CardHeader>
 
       <Divider className="self-end" />

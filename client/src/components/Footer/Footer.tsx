@@ -21,7 +21,7 @@ export const Footer = () => {
         <img src={SpiderInteresting} alt="Spider Interesting" className="w-8" />
       </div>
 
-      <UserStats className="ml-6" />
+      <UserStats className="ml-6" forceShow />
     </footer>
   );
 };

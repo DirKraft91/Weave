@@ -3,9 +3,12 @@ import { FaUser } from 'react-icons/fa6';
 interface UserStatsProps {
   count?: number;
   className?: string;
+  forceShow?: boolean;
 }
 
-export const UserStats = ({ count = 0, className = '' }: UserStatsProps) => {
+export const UserStats = ({ count = 0, className = '', forceShow = false }: UserStatsProps) => {
+  if (count <= 0 && !forceShow) return null;
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <FaUser size={18} className="text-white" />

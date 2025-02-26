@@ -5,6 +5,8 @@ export const PROVIDERS = [
     domain: 'x.com',
     link: 'https://x.com',
     providerId: 'e6fe962d-8b4e-4ce5-abcc-3d21c88bd64a',
+    userCount: 25,
+    description: 'Verifies twitter profile of user',
   },
   {
     id: 'google',
@@ -12,6 +14,8 @@ export const PROVIDERS = [
     domain: 'gmail.com',
     link: 'https://gmail.com',
     providerId: 'f9f383fd-32d9-4c54-942f-5e9fda349762',
+    userCount: 0,
+    description: 'Verifies Google account ownership',
   },
   {
     id: 'linkedin',
@@ -19,6 +23,8 @@ export const PROVIDERS = [
     domain: 'linkedin.com',
     link: 'https://linkedin.com',
     providerId: 'a9f1063c-06b7-476a-8410-9ff6e427e637',
+    userCount: 0,
+    description: 'Verifies LinkedIn profile authenticity',
   },
   {
     id: 'github',
@@ -26,5 +32,7 @@ export const PROVIDERS = [
     domain: 'github.com',
     link: 'https://github.com',
     providerId: '6d3f6753-7ee6-49ee-a545-62f1b1822ae5',
+    userCount: 0,
+    description: 'Verifies GitHub account ownership',
   },
 ] as const;
