@@ -31,6 +31,7 @@ class AuthService {
   }
 
   getAccessToken(): string | null {
+    console.log(cookieService.get(this.ACCESS_TOKEN_KEY));
     return cookieService.get(this.ACCESS_TOKEN_KEY);
   }
 

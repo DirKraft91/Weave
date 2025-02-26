@@ -55,6 +55,9 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
         queryClient.invalidateQueries({
           queryKey: ['my-proofs'],
         });
+        queryClient.invalidateQueries({
+          queryKey: ['provider-stats'],
+        });
         closeAll();
         addToast({
           title: 'Proof applied',
@@ -109,7 +112,10 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
       portalContainer={document.getElementById('root') as Element}
       hideCloseButton
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {
+        if (saveProofMutation.isPending) return;
+        onClose();
+      }}
     >
       <ModalContent className="bg-secondary">
         <ModalBody>
@@ -123,7 +129,12 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
         </ModalBody>
         <ModalFooter className="flex flex-col gap-6">
           <span className="text-medium text-center px-10">Scan this QR Code</span>
-          <Button isLoading={verificationRequest.isLoading} variant="solid" onClick={verificationRequest.asyncExecute}>
+          <Button
+            isLoading={verificationRequest.isLoading || saveProofMutation.isPending}
+            isDisabled={verificationRequest.isLoading || saveProofMutation.isPending}
+            variant="solid"
+            onClick={verificationRequest.asyncExecute}
+          >
             Generate new link
           </Button>
         </ModalFooter>

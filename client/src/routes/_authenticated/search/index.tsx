@@ -17,16 +17,17 @@ import { SiBinance, SiCoinbase } from 'react-icons/si';
 
 const providers = PROVIDERS.map((provider) => ({
   ...provider,
-  icon: {
-    twitter: FaSquareXTwitter,
-    google: FcGoogle,
-    linkedin: FaLinkedin,
-    github: FaGithub,
-    facebook: FaFacebook,
-    binance: SiBinance,
-    coinbase: SiCoinbase,
-    instagram: FaInstagram,
-  }[provider.id] || FaGithub,
+  icon:
+    {
+      twitter: FaSquareXTwitter,
+      google: FcGoogle,
+      linkedin: FaLinkedin,
+      github: FaGithub,
+      facebook: FaFacebook,
+      binance: SiBinance,
+      coinbase: SiCoinbase,
+      instagram: FaInstagram,
+    }[provider.id] || FaGithub,
 }));
 
 function SearchComponent() {
@@ -52,7 +53,6 @@ function SearchComponent() {
   const providerStatsQuery = useQuery({
     queryKey: ['provider-stats'],
     queryFn: () => proofService.fetchProofStats(),
-    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   const isNotFound = userProofsQuery.data?.identity_records?.length === 0;
@@ -60,22 +60,21 @@ function SearchComponent() {
   const currentProviders = useMemo(() => {
     if (!userProofsQuery.data || isNotFound) return [];
 
-    return providers.map((provider) => {
-      const record = userProofsQuery.data?.identity_records.find(
-        (record) => record.provider_id === provider.providerId
-      );
+    return userProofsQuery.data?.identity_records
+      .map((record) => {
+        const provider = providers.find((p) => p.providerId === record.provider_id);
+        if (!provider) return null;
 
-      // Use the stats from the query if available, otherwise fall back to the default
-      const userCount = providerStatsQuery.data?.[provider.providerId] ?? 0;
+        const userCount = provider.providerId ? (providerStatsQuery.data?.[provider.providerId] ?? 0) : 0;
 
-      return {
-        ...provider,
-        isVerified: !!record,
-        value: '',
-        userCount,
-        // value: proof?.public_data.username || proof?.public_data.email, // @TODO: need to parse claim_data_params
-      };
-    });
+        return {
+          ...provider,
+          isVerified: true,
+          value: '',
+          userCount,
+        };
+      })
+      .filter((provider) => provider !== null);
   }, [userProofsQuery.data, isNotFound, providerStatsQuery.data]);
 
   const handleSearch = (query: string) => {

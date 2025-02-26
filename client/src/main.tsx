@@ -29,7 +29,8 @@ const router = createRouter({
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
+      refetchInterval: false,
     },
   },
 });

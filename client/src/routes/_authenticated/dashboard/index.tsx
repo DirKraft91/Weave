@@ -33,7 +33,6 @@ function DashboardComponent() {
   const meProofsQuery = useQuery({
     queryKey: ['my-proofs'],
     queryFn: userService.fetchMe,
-    refetchInterval: 10_000,
   });
 
   const providerStatsQuery = useQuery({
@@ -44,9 +43,7 @@ function DashboardComponent() {
 
   const currentProviders = useMemo(() => {
     return providers.map((provider) => {
-      const record = meProofsQuery.data?.identity_records.find(
-        (record) => record.provider_id === provider.providerId
-      );
+      const record = meProofsQuery.data?.identity_records.find((record) => record.provider_id === provider.providerId);
 
       // Use the stats from the query if available, otherwise fall back to the default
       const userCount = providerStatsQuery.data?.[provider.providerId] ?? 0;

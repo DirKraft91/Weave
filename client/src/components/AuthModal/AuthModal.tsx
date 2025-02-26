@@ -92,7 +92,10 @@ export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           base: 'bg-secondary',
         }}
         isOpen={isOpen}
-        onClose={onClose}
+        onClose={() => {
+          if (signIn.isPending) return;
+          onClose();
+        }}
         hideCloseButton
       >
         <ModalContent>
@@ -116,6 +119,7 @@ export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                     onClick={() => {
                       signIn.mutateAsync();
                     }}
+                    isLoading={signIn.isPending}
                     isDisabled={signIn.isPending}
                     className="w-1/2"
                   >
