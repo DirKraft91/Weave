@@ -242,6 +242,25 @@ cargo build      # Build the project
 - `GET /me` - Get current user
 - `GET /user/:user_id` - Get user by ID
 
+## 🚀 Future Plans
+
+### SDK Development
+We are actively working on developing a comprehensive SDK (Software Development Kit) that will allow developers to easily integrate Weave's functionality into their own applications. The SDK will include:
+
+- **JavaScript/TypeScript Library**: For web and Node.js applications
+- **Rust Crate**: For backend integrations
+
+The SDK will provide:
+- Simple authentication with social accounts
+- Verification of social media ownership
+- Access to user statistics and analytics
+- Webhook integrations for real-time updates
+- Customizable UI components
+
+Our goal is to make social account verification a standard feature that any application can implement with minimal effort, enhancing security and trust across the web3 ecosystem.
+
+Stay tuned for updates on our SDK development progress!
+
 ## 👥 About Us
 
 We are a team of software engineers specializing in Web3 development, with a focus on:
