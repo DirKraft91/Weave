@@ -1,3 +1,4 @@
+import { normalizePath } from "@/utils/path";
 import { Link, useMatches } from "@tanstack/react-router";
 
 const menuItems = [
@@ -18,8 +19,6 @@ const menuItems = [
   //   to: '/search'
   // }
 ];
-
-const normalizePath = (path: string) => path.replace(/\/+$/, '');
 
 export const HeaderMenu = () => {
   const matches = useMatches();
