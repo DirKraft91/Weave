@@ -1,6 +1,6 @@
-import { API_URL, AUTH_CONFIG } from '@/config';
+import { AUTH_CONFIG } from '@/config';
 import { cookieService } from './cookie.service';
-
+import { httpService } from './http.service';
 interface LoginCredentials {
   signer: string;
   public_key: string;
@@ -21,7 +21,7 @@ class AuthService {
   private readonly ACCESS_TOKEN_KEY = AUTH_CONFIG.ACCESS_TOKEN_KEY;
   private readonly REFRESH_TOKEN_KEY = AUTH_CONFIG.REFRESH_TOKEN_KEY;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -53,19 +53,14 @@ class AuthService {
     data: Uint8Array;
     signer: string;
   }> {
-    const response = await fetch(`${API_URL}/auth/prepare`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
+    try {
+      return await httpService.post<{
+        data: Uint8Array;
+        signer: string;
+      }>('/auth/prepare', payload);
+    } catch {
       throw new Error('Failed to prepare auth data');
     }
-
-    return await response.json();
   }
 
   public logout(): void {
@@ -74,24 +69,16 @@ class AuthService {
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_URL}/auth`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          signer: credentials.signer,
-          public_key: credentials.public_key,
-          signature: credentials.signature,
-          data: credentials.data,
-        }),
+      const data = await httpService.post<{
+        access_token: string;
+        refresh_token: string;
+        success?: boolean;
+      }>('/auth', {
+        signer: credentials.signer,
+        public_key: credentials.public_key,
+        signature: credentials.signature,
+        data: credentials.data,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Authentication failed');
-      }
 
       if (data.access_token && data.refresh_token) {
         this.setTokens(data.access_token, data.refresh_token);
@@ -117,30 +104,24 @@ class AuthService {
         return false;
       }
 
-      const response = await fetch(`${API_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${refreshToken}`,
-        },
-      });
+      const originalHeaders = { ...httpService['axios'].defaults.headers };
+      httpService['axios'].defaults.headers.Authorization = `Bearer ${refreshToken}`;
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          this.clearTokens();
-          return false;
+      try {
+        const data = await httpService.post<{
+          accessToken: string;
+          refreshToken: string;
+        }>('/auth/refresh');
+
+        if (data.accessToken && data.refreshToken) {
+          this.setTokens(data.accessToken, data.refreshToken);
+          return true;
         }
+
         return false;
+      } finally {
+        httpService['axios'].defaults.headers = originalHeaders;
       }
-
-      const data = await response.json();
-
-      if (data.accessToken && data.refreshToken) {
-        this.setTokens(data.accessToken, data.refreshToken);
-        return true;
-      }
-
-      return false;
     } catch (error) {
       console.error('Error refreshing tokens:', error);
       return false;
