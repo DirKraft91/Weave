@@ -48,7 +48,7 @@ function SearchComponent() {
     enabled: !!address,
   });
   const isNotFound = userProofsQuery.data?.identity_records?.length === 0;
-  const currentProviders = userProofsQuery.data ? providers.map((provider) => {
+  const currentProviders = userProofsQuery.data && !isNotFound ? providers.map((provider) => {
     const record = userProofsQuery.data?.identity_records.find((record) => record.provider_id === provider.providerId);
     return {
       ...provider,
