@@ -22,7 +22,7 @@ export const AsideNavigation = () => {
         to="/search"
         variant="light"
         color="default"
-        className="justify-start gap-2"
+        className="justify-between gap-2"
         size="lg"
       >
         Search
