@@ -20,6 +20,11 @@ class HttpService {
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+
+      if (config.url && !config.url.startsWith('/api') && !config.url.startsWith('http')) {
+        config.url = `/api${config.url.startsWith('/') ? '' : '/'}${config.url}`;
+      }
+
       return config;
     });
 

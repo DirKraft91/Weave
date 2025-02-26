@@ -30,16 +30,16 @@ pub fn create_router(state: AppState) -> Router {
         .allow_credentials(true);
 
     let public_routes = Router::new()
-        .route("/auth/prepare", post(prepare_auth_data))
-        .route("/auth", post(auth_wallet))
-        .route("/auth/refresh", post(refresh_tokens))
-        .route("/proof-stats", post(get_applied_proof_stats));
+        .route("/api/auth/prepare", post(prepare_auth_data))
+        .route("/api/auth", post(auth_wallet))
+        .route("/api/auth/refresh", post(refresh_tokens))
+        .route("/api/proof-stats", post(get_applied_proof_stats));
 
     let protected_routes = Router::new()
-        .route("/proof/prepare", post(prepare_to_apply_proof))
-        .route("/proof", post(apply_proof))
-        .route("/me", get(get_me))
-        .route("/user/:user_id", get(get_user))
+        .route("/api/proof/prepare", post(prepare_to_apply_proof))
+        .route("/api/proof", post(apply_proof))
+        .route("/api/me", get(get_me))
+        .route("/api/user/:user_id", get(get_user))
         .layer(middleware::from_fn(auth_middleware));
 
     Router::new()
