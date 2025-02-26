@@ -48,7 +48,7 @@ function SearchComponent() {
     enabled: !!address,
   });
   const isNotFound = userProofsQuery.data?.identity_records?.length === 0;
-  const currentProviders = providers.map((provider) => {
+  const currentProviders = userProofsQuery.data ? providers.map((provider) => {
     const record = userProofsQuery.data?.identity_records.find((record) => record.provider_id === provider.providerId);
     return {
       ...provider,
@@ -56,7 +56,7 @@ function SearchComponent() {
       value: '',
       // value: proof?.public_data.username || proof?.public_data.email, // @TODO: need to parse claim_data_params
     };
-  });
+  }) : [];
 
   const handleSearch = (query: string) => {
     setAddress(query);
