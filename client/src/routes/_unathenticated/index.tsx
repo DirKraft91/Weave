@@ -1,9 +1,9 @@
 import { AuthModal } from '@/components/AuthModal/AuthModal';
 import { WalletConnectModal } from '@/components/WalletConnectModal/WalletConnectModal';
 import { useAuthStore, useWalletStore } from '@/contexts';
-import { useDisclosure, Button } from '@heroui/react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { WalletStatus } from '@cosmos-kit/core';
+import { Button, useDisclosure } from '@heroui/react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_unathenticated/')({
   component: RouteComponent,
@@ -39,6 +39,11 @@ function RouteComponent() {
           <br />
           Secure your identity.
         </h1>
+        <h2 className="text-lg text-center leading-7 text-foreground-600">
+          Effortlessly link your accounts and prove ownership with privacy-first security.
+          <br />
+          Take control of your digital identity without compromising trust.
+        </h2>
         <Button variant="solid" color="secondary" size="lg" onClick={handleClick}>
           {isAuthenticated ? 'Go To Dashboard' : isWalletConnected ? 'Start Now' : 'Connect Wallet'}
         </Button>
