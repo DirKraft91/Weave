@@ -4,6 +4,10 @@ import { httpService } from './http.service';
 
 export type Proof = ReclaimProof;
 
+export interface ProofStats {
+  [providerId: string]: number;
+}
+
 class ProofService {
   async initializeVerificationRequest({
     providerId,
@@ -56,6 +60,16 @@ class ProofService {
     return await httpService.post<{
       success: boolean;
     }>('/proof', payload);
+  }
+
+  async fetchProofStats(): Promise<ProofStats> {
+    const response = await httpService.post<{ stats: [string, number][] }>('/proof-stats');
+
+    // Transform the array of tuples into an object for easier access
+    return response.stats.reduce((acc, [providerId, count]) => {
+      acc[providerId] = count;
+      return acc;
+    }, {} as ProofStats);
   }
 }
 

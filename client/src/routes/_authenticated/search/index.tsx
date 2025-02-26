@@ -3,11 +3,12 @@ import SpiderSad from '@/assets/spider-sad.png';
 import { ProviderCard } from '@/components/ProviderCard';
 import { SearchInput } from '@/components/SearchInput/SearchInput';
 import { PROVIDERS } from '@/config';
+import { proofService } from '@/services/proof.service';
 import { userService } from '@/services/user.service';
 import { addToast } from '@heroui/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { IconType } from 'react-icons';
 import { FaFacebook, FaGithub, FaInstagram, FaLinkedin } from 'react-icons/fa';
 import { FaSquareXTwitter } from 'react-icons/fa6';
@@ -47,16 +48,35 @@ function SearchComponent() {
     },
     enabled: !!address,
   });
+
+  const providerStatsQuery = useQuery({
+    queryKey: ['provider-stats'],
+    queryFn: () => proofService.fetchProofStats(),
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
   const isNotFound = userProofsQuery.data?.identity_records?.length === 0;
-  const currentProviders = userProofsQuery.data && !isNotFound ? providers.map((provider) => {
-    const record = userProofsQuery.data?.identity_records.find((record) => record.provider_id === provider.providerId);
-    return {
-      ...provider,
-      isVerified: !!record,
-      value: '',
-      // value: proof?.public_data.username || proof?.public_data.email, // @TODO: need to parse claim_data_params
-    };
-  }) : [];
+
+  const currentProviders = useMemo(() => {
+    if (!userProofsQuery.data || isNotFound) return [];
+
+    return providers.map((provider) => {
+      const record = userProofsQuery.data?.identity_records.find(
+        (record) => record.provider_id === provider.providerId
+      );
+
+      // Use the stats from the query if available, otherwise fall back to the default
+      const userCount = providerStatsQuery.data?.[provider.providerId] ?? 0;
+
+      return {
+        ...provider,
+        isVerified: !!record,
+        value: '',
+        userCount,
+        // value: proof?.public_data.username || proof?.public_data.email, // @TODO: need to parse claim_data_params
+      };
+    });
+  }, [userProofsQuery.data, isNotFound, providerStatsQuery.data]);
 
   const handleSearch = (query: string) => {
     setAddress(query);
@@ -88,6 +108,8 @@ function SearchComponent() {
                 link: `https://${provider.providerId.toLowerCase()}.com`,
                 value: provider.value,
                 providerId: provider.providerId,
+                userCount: provider.userCount,
+                description: provider.description,
               }}
             />
           ))}
