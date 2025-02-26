@@ -40,11 +40,11 @@ class ProofService {
   }
 
   async prepareProof(payload: { proof: Proof; provider_id: string; signer: string }): Promise<{
-    data: number[];
+    data: Uint8Array;
     signer: string;
   }> {
     return await httpService.post<{
-      data: number[];
+      data: Uint8Array;
       signer: string;
     }>('/proof/prepare', payload);
   }
@@ -53,7 +53,7 @@ class ProofService {
     public_key: string;
     signature: string;
     signer: string;
-    data: string;
+    data: Uint8Array;
     proof: Proof;
     provider_id: string;
   }): Promise<{ success: boolean }> {

@@ -9,7 +9,6 @@ import { useSignArbitrary } from '@/hooks/useSignArbitrary';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Proof } from '@/services/proof.service';
 import { useWalletClient } from '@/hooks/useWalletClient';
-import { fromUint8ArrayToString } from '@/utils/fromUint8ArrayToString';
 import { useChainStore } from '@/contexts/chain';
 import { useAsyncExecutor } from '@/hooks/useAsyncExecutor';
 interface ProofModalProps {
@@ -37,14 +36,13 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
       signer: account.address,
     });
 
-    return fromUint8ArrayToString(response.data);
+    return response.data;
   };
 
   const saveProofMutation = useMutation({
     mutationFn: async (proof: Proof) => {
       try {
         const dataToSign = await getDataToSign(proof);
-        console.log('dataToSign', dataToSign);
         const { signResult, account } = await signArbitrary.sign(dataToSign);
         await proofService.applyProof({
           signer: account.address,

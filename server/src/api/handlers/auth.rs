@@ -25,7 +25,6 @@ use crate::services::user_service::UserService;
 use crate::utils::jwt::{create_access_token, create_refresh_token, decode_token, TokenType};
 use chrono::Utc;
 use log::debug;
-use base64;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -60,7 +59,7 @@ pub async fn auth_wallet(
         body.public_key.clone(), 
         body.signature.clone(), 
         body.signer.clone(), 
-        base64::encode(&body.data)
+        body.data.clone()
     );
     let user_record = user_amino_signed_record.to_user_record();
     let data = user_record.user_data.clone();

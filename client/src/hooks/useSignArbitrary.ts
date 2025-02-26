@@ -7,7 +7,7 @@ export const useSignArbitrary = () => {
   const { selectedChain } = useChainStore();
   const { client, status } = useWalletClient(selectedWallet?.walletName);
 
-  const sign = async (data: string) => {
+  const sign = async (data: string | Uint8Array) => {
     if (status !== 'Done') {
       throw new Error('Wallet is not connected');
     }

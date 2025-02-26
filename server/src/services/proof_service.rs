@@ -48,12 +48,9 @@ impl<V: ProofValidator> ProofService<V> {
             Utc::now().timestamp(), 
             self.provider_id.clone()
         );
+        let data = serde_json::to_vec(&identity_record).unwrap();
 
-        
-        let json_string = serde_json::to_string(&identity_record)?;
-        let data = json_string.as_bytes().to_vec();
-
-        return Ok(data);
+        Ok(data)
     }
 }
 

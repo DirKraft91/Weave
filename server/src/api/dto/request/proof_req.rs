@@ -13,7 +13,7 @@ pub struct ApplyProofRequestDto {
     pub public_key: String,
     pub signature: String,
     pub signer: String,
-    pub data: String,
+    pub data: Vec<u8>,
     pub proof: ReclaimProof,
     pub provider_id: String,
 }

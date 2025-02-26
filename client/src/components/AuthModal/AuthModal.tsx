@@ -31,9 +31,7 @@ export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         public_key: fromUint8ArrayToString(account.pubkey),
       });
 
-      const result = fromUint8ArrayToString(response.data);
-
-      return result;
+      return response.data;
     } catch (error) {
       closeAll();
       addToast({
@@ -47,7 +45,7 @@ export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     }
   };
 
-  const auth = async (dataToSign: string) => {
+  const auth = async (dataToSign: Uint8Array) => {
     try {
       const { signResult, account } = await sign(dataToSign);
       const response = await authService.login({

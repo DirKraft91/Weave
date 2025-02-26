@@ -14,16 +14,17 @@ struct ArbitraryMessageItem {
 #[derive(Deserialize)]
 struct ArbitraryMessageValue {
     data: String,
-    signer: String,
 }
 
-pub fn to_arbitrary_message_bytes(signer: &str, data: &str) -> String {
-    format!(
+pub fn to_arbitrary_message_bytes(signer: &str, data: &str) -> Vec<u8> {
+    let message =format!(
         "{{\"account_number\":\"0\",\"chain_id\":\"\",\"fee\":{{\"amount\":[],\"gas\":\"0\"}},\
         \"memo\":\"\",\"msgs\":[{{\"type\":\"sign/MsgSignData\",\"value\":{{\"data\":\"{}\",\
         \"signer\":\"{}\"}}}}],\"sequence\":\"0\"}}",
         data, signer
-    )
+    );
+
+    message.as_bytes().to_vec()
 }
 
 pub fn from_arbitrary_message_bytes_to_data_structure<D: DeserializeOwned>(data_bytes: &[u8]) -> anyhow::Result<D> {

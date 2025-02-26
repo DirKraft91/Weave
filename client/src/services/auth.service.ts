@@ -5,7 +5,7 @@ interface LoginCredentials {
   signer: string;
   public_key: string;
   signature: string;
-  data: string;
+  data: Uint8Array;
 }
 
 interface AuthResponse {
@@ -49,7 +49,7 @@ class AuthService {
   }
 
   public async prepareAuthData(payload: { signer: string; public_key: string }): Promise<{
-    data: number[];
+    data: Uint8Array;
     signer: string;
   }> {
     const response = await fetch(`${API_URL}/auth/prepare`, {

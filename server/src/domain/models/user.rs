@@ -33,6 +33,7 @@ impl UserIdentityRecord {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct User {
     pub id: String,
     pub identity_records: Vec<UserIdentityRecord>,
@@ -61,11 +62,11 @@ pub struct UserAminoSignedRecord {
     pub public_key: String,
     pub signature: String,
     pub signer: String,
-    pub data: String,
+    pub data: Vec<u8>,
 }
 
 impl UserAminoSignedRecord {
-    pub fn new(public_key: String, signature: String, signer: String, data: String) -> Self {
+    pub fn new(public_key: String, signature: String, signer: String, data: Vec<u8>) -> Self {
         Self { public_key, signature, signer, data }
     }
 
@@ -89,8 +90,8 @@ impl UserAminoSignedRecord {
     }
 
     pub fn to_user_record(&self) -> UserRecord {
-        let amino_message = to_arbitrary_message_bytes(&self.signer, &self.data);
+        let arbitrary_message_bytes = to_arbitrary_message_bytes(&self.signer, &base64::encode(self.data.clone()));
 
-        UserRecord::new(self.to_signature_bundle(), amino_message.into_bytes(), self.signer.clone())
+        UserRecord::new(self.to_signature_bundle(), arbitrary_message_bytes, self.signer.clone())
     }
 }

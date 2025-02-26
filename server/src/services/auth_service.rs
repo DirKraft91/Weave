@@ -50,9 +50,8 @@ impl AuthService {
             .meeting_signed_challenge(&service_sk)
             .map_err(|e| AuthError::PrepareAuthDataError(e.to_string()))?
             .transaction();
-
         let bytes_to_sign = unsigned_tx.signing_payload()?;
-
+        
         Ok(PreparedAuthData {
             data: bytes_to_sign,
         })
