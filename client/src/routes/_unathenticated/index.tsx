@@ -49,7 +49,9 @@ function RouteComponent() {
         </Button>
         <AuthModal {...authModal} />
         <WalletConnectModal {...walletConnectModal} />
+
       </div>
+
     </div>
   );
 }

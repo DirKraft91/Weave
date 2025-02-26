@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { Copyright } from '../../../components/Copyright';
 
 const sections = [
   {
@@ -21,7 +22,7 @@ const sections = [
 
 function AboutComponent() {
   return (
-    <div className="container mx-auto px-4 py-36">
+    <div className="container mx-auto px-4 pt-36 pb-6 min-h-screen flex flex-col justify-between">
       <div className="grid md:grid-cols-2 gap-16">
         {sections.map((section, index) => (
           <div
@@ -36,6 +37,9 @@ function AboutComponent() {
             </p>
           </div>
         ))}
+      </div>
+      <div className="w-full z-10 flex justify-center items-center relative">
+        <Copyright />
       </div>
     </div>
   );

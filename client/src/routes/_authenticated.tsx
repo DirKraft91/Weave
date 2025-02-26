@@ -1,6 +1,7 @@
 import { AsideNavigation } from '@/components/AsideNavigation';
 import { useAuthStore } from '@/contexts/auth';
 import { createFileRoute, Navigate, Outlet, redirect } from '@tanstack/react-router';
+import { Copyright } from '../components/Copyright';
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context }) => {
@@ -27,6 +28,9 @@ function AuthenticatedLayout() {
         <main className="flex flex-1">
           <Outlet />
         </main>
+      </div>
+      <div className="w-full z-10 flex justify-center items-center relative bottom-6">
+        <Copyright />
       </div>
     </div>
   );

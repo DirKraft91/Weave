@@ -1,4 +1,3 @@
-import SpiderInteresting from '@/assets/spider-interesting.png';
 import { UserStats } from '@/components/UserStats';
 import { proofService } from '@/services/proof.service';
 import { useQuery } from '@tanstack/react-query';
@@ -6,8 +5,6 @@ import { useMemo } from 'react';
 import { FaGithub, FaXTwitter } from 'react-icons/fa6';
 
 export const Footer = () => {
-  const currentYear = new Date().getFullYear();
-
   const providerStatsQuery = useQuery({
     queryKey: ['provider-stats'],
     queryFn: () => proofService.fetchProofStats(),
@@ -30,11 +27,6 @@ export const Footer = () => {
         <a href="https://github.com/DirKraft91/Weave" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
           <FaGithub size={20} />
         </a>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <p className="text-sm text-white">© {currentYear} Weave</p>
-        <img src={SpiderInteresting} alt="Spider Interesting" className="w-8" />
       </div>
 
       <UserStats count={totalVerifications} className="ml-6" forceShow />

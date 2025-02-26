@@ -20,7 +20,7 @@ export const Route = createRootRouteWithContext<RootRouterContext>()({
 
       <Background />
 
-      <div className="relative z-1 flex-1 overflow-y-auto overflow-x-hidden">
+      <div className="relative z-1 flex-1 overflow-y-auto overflow-x-hidden" data-scrollable="true">
         <Outlet />
       </div>
 

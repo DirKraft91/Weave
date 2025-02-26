@@ -1,6 +1,7 @@
 import FlowImage from '@/assets/Flow.svg';
 import SpiderHappy from '@/assets/spider-happy.png';
 import { createFileRoute } from '@tanstack/react-router';
+import { Copyright } from '../../../components/Copyright';
 
 const steps = [
   {
@@ -19,7 +20,7 @@ const steps = [
 
 function HowItWorksComponent() {
   return (
-    <div className="flex flex-col flex-1 py-14">
+    <div className="flex flex-col flex-1 pt-14 pb-6">
       <div className="container mx-auto px-4 py-16">
         <div className="flex flex-col items-center">
           <div className="bg-secondary/20 rounded-md px-10 py-4 mb-12">
@@ -59,7 +60,9 @@ function HowItWorksComponent() {
             <img src={FlowImage} alt="Flow" />
           </div>
         </div>
-
+      </div>
+      <div className="w-full z-10 flex justify-center items-center relative">
+        <Copyright />
       </div>
     </div>
   );
