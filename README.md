@@ -107,7 +107,7 @@ cargo install diesel_cli --no-default-features --features mysql
 ```bash
 cd server
 diesel setup
-diesel migration run
+make up-migraitons
 ```
 
 5. Run the server:
@@ -145,17 +145,39 @@ diesel setup
 
 2. Run existing migrations:
 ```bash
-diesel migration run
+make up-migraitons
 ```
 
 3. Create a new migration:
 ```bash
-diesel migration generate migration_name
+make new-migraiton
 ```
 
 4. Revert last migration:
 ```bash
-diesel migration redo
+make down-migraitons
+```
+
+#### Docker Operations
+
+```bash
+# Build and start all services
+make build
+
+# Start all services in detached mode
+make up
+
+# Start only the database
+make up-db
+
+# Stop all services
+make down
+
+# View logs
+make logs
+
+# Check running containers
+make ps
 ```
 
 #### Working with Docker
@@ -212,10 +234,11 @@ cargo build      # Build the project
 - `POST /auth/prepare` - Prepare authentication data
 - `POST /auth` - Authenticate wallet
 - `POST /auth/refresh` - Refresh authentication tokens
+- `POST /proof-stats` - Get proof statistics
 
 ### Protected Routes
-- `POST /proof` - Add proof
-- `POST /proof-stats` - Get proof statistics
+- `POST /proof/prepare` - Prepare proof data
+- `POST /proof` - Apply proof
 - `GET /me` - Get current user
 - `GET /user/:user_id` - Get user by ID
 
