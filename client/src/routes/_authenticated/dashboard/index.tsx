@@ -6,9 +6,10 @@ import { useDisclosure } from '@heroui/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { FaGithub, FaLinkedin } from 'react-icons/fa';
+import { FaFacebook, FaGithub, FaInstagram, FaLinkedin } from 'react-icons/fa';
 import { FaSquareXTwitter } from 'react-icons/fa6';
 import { FcGoogle } from 'react-icons/fc';
+import { SiBinance, SiCoinbase } from 'react-icons/si';
 
 const providers = PROVIDERS.map((provider) => ({
   ...provider,
@@ -17,6 +18,10 @@ const providers = PROVIDERS.map((provider) => ({
     google: FcGoogle,
     linkedin: FaLinkedin,
     github: FaGithub,
+    facebook: FaFacebook,
+    binance: SiBinance,
+    coinbase: SiCoinbase,
+    instagram: FaInstagram,
   }[provider.id],
 }));
 
@@ -46,7 +51,7 @@ function DashboardComponent() {
   };
 
   return (
-    <div className="p-6 w-full">
+    <div className="p-6 w-full pb-24">
       <h2 className="text-3xl font-semibold text-white mb-8">My providers</h2>
 
       {meProofsQuery.isFetching ? (
