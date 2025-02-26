@@ -7,11 +7,12 @@ import { userService } from '@/services/user.service';
 import { addToast } from '@heroui/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { FaGithub } from 'react-icons/fa';
 import { useState } from 'react';
-import { FaLinkedin } from 'react-icons/fa';
+import { IconType } from 'react-icons';
+import { FaFacebook, FaGithub, FaInstagram, FaLinkedin } from 'react-icons/fa';
 import { FaSquareXTwitter } from 'react-icons/fa6';
 import { FcGoogle } from 'react-icons/fc';
+import { SiBinance, SiCoinbase } from 'react-icons/si';
 
 const providers = PROVIDERS.map((provider) => ({
   ...provider,
@@ -20,7 +21,11 @@ const providers = PROVIDERS.map((provider) => ({
     google: FcGoogle,
     linkedin: FaLinkedin,
     github: FaGithub,
-  }[provider.id],
+    facebook: FaFacebook,
+    binance: SiBinance,
+    coinbase: SiCoinbase,
+    instagram: FaInstagram,
+  }[provider.id] || FaGithub,
 }));
 
 function SearchComponent() {
@@ -77,7 +82,7 @@ function SearchComponent() {
               provider={{
                 id: provider.providerId,
                 name: provider.name,
-                icon: provider.icon,
+                icon: provider.icon as IconType,
                 isVerified: true,
                 domain: provider.providerId.toLowerCase() + '.com',
                 link: `https://${provider.providerId.toLowerCase()}.com`,
