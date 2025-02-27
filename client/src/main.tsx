@@ -1,15 +1,15 @@
-import { createRoot } from 'react-dom/client';
-import { RouterProvider, createRouter } from '@tanstack/react-router';
-import { routeTree } from './routeTree.gen';
+import { ChainProvider } from '@cosmos-kit/react';
 import { HeroUIProvider } from '@heroui/react';
 import { ToastProvider } from '@heroui/toast';
-import './input.css';
-import { FC } from 'react';
-import { useAuthStore } from './contexts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ChainProvider } from '@cosmos-kit/react';
+import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { assets, chains } from 'chain-registry';
+import { FC } from 'react';
+import { createRoot } from 'react-dom/client';
 import { wallets } from './config/wallets';
+import { useAuthStore } from './contexts';
+import './input.css';
+import { routeTree } from './routeTree.gen';
 
 const router = createRouter({
   routeTree,

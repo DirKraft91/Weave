@@ -1,3 +1,4 @@
+import { AuroraAnimation } from '@/components/AuroraAnimation';
 import { AuthModal } from '@/components/AuthModal/AuthModal';
 import { WalletConnectModal } from '@/components/WalletConnectModal/WalletConnectModal';
 import { useAuthStore, useWalletStore } from '@/contexts';
@@ -34,12 +35,13 @@ function RouteComponent() {
   return (
     <div className="flex flex-1">
       <div className="flex flex-1 flex-col items-center justify-center gap-10">
-        <h1 className="text-8xl font-bold text-center">
+        <h1 className="relative text-8xl font-bold text-center title z-1">
           <span className="text-secondary">Weave</span> your accounts.
           <br />
           Secure your identity.
+          <AuroraAnimation />
         </h1>
-        <h2 className="text-lg text-center leading-7 text-foreground-600">
+        <h2 className="relative text-lg text-center leading-7 text-foreground-600 z-2">
           Effortlessly link your accounts and prove ownership with privacy-first security.
           <br />
           Take control of your digital identity without compromising trust.
