@@ -8,7 +8,7 @@ export const Footer = () => {
   const providerStatsQuery = useQuery({
     queryKey: ['provider-stats'],
     queryFn: () => proofService.fetchProofStats(),
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
   });
 
   const totalVerifications = useMemo(() => {

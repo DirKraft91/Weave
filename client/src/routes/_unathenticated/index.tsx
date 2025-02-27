@@ -33,7 +33,7 @@ function RouteComponent() {
   };
 
   return (
-    <div className="flex flex-1">
+    <div className="flex flex-1 overflow-hidden">
       <div className="flex flex-1 flex-col items-center justify-center gap-10">
         <h1 className="relative text-8xl font-bold text-center title z-1">
           <span className="text-secondary">Weave</span> your accounts.
