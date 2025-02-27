@@ -1,3 +1,4 @@
+import { useAboutAnimations } from '@/hooks/useAnimations';
 import { createFileRoute } from '@tanstack/react-router';
 import { motion } from 'framer-motion';
 import { Copyright } from '../../../components/Copyright';
@@ -22,55 +23,13 @@ const sections = [
 ];
 
 function AboutComponent() {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2, // delay between animations of sections
-        delayChildren: 0.3,   // initial delay before the first section animation
-      },
-    },
-  };
-
-  const sectionVariants = {
-    hidden: {
-      opacity: 0,
-      y: 30,
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        type: 'spring',
-        stiffness: 80,
-        damping: 15,
-      }
-    },
-  };
-
-  const titleVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut"
-      }
-    }
-  };
-
-  const contentVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 0.5,
-        delay: 0.2
-      }
-    }
-  };
+  const {
+    containerVariants,
+    sectionVariants,
+    titleVariants,
+    contentVariants,
+    copyrightVariants
+  } = useAboutAnimations();
 
   return (
     <div className="container mx-auto px-4 pt-36 pb-6 min-h-screen flex flex-col justify-between">
@@ -109,9 +68,9 @@ function AboutComponent() {
       </motion.div>
       <motion.div
         className="w-full z-10 flex justify-center items-center relative"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5, duration: 0.8 }}
+        variants={copyrightVariants}
+        initial="hidden"
+        animate="visible"
       >
         <Copyright />
       </motion.div>

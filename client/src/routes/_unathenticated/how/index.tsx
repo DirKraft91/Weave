@@ -1,5 +1,6 @@
 import FlowImage from '@/assets/Flow.svg';
 import SpiderHappy from '@/assets/spider-happy.png';
+import { useHowItWorksAnimations } from '@/hooks/useAnimations';
 import { createFileRoute } from '@tanstack/react-router';
 import { motion } from 'framer-motion';
 import { Copyright } from '../../../components/Copyright';
@@ -20,41 +21,22 @@ const steps = [
 ];
 
 function HowItWorksComponent() {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.3, // delay between animations of child elements
-      },
-    },
-  };
-
-  const stepVariants = {
-    hidden: {
-      x: -100, // initial position to the left of the visible area
-      opacity: 0
-    },
-    visible: {
-      x: 0, // final position (normal)
-      opacity: 1,
-      transition: {
-        type: 'spring', // animation type - spring effect
-        stiffness: 100, // spring stiffness
-        damping: 12, // damping
-        duration: 0.5, // animation duration
-      }
-    },
-  };
+  const {
+    containerVariants,
+    stepVariants,
+    sectionTitleVariants,
+    imageVariants,
+    flowImageVariants
+  } = useHowItWorksAnimations();
 
   return (
     <div className="flex flex-col flex-1 pt-14 pb-6">
       <div className="container mx-auto px-4 py-16">
         <div className="flex flex-col items-center">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            initial="hidden"
+            animate="visible"
+            variants={sectionTitleVariants}
             className="bg-secondary/20 rounded-md px-10 py-4 mb-12"
           >
             <span className="text-xl font-inter">Simple steps for the user</span>
@@ -86,9 +68,9 @@ function HowItWorksComponent() {
 
             <motion.div
               className="flex justify-center"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.9 }} // delay after steps animation
+              variants={imageVariants}
+              initial="hidden"
+              animate="visible"
             >
               <img src={SpiderHappy} alt="Spider-happy" />
             </motion.div>
@@ -100,9 +82,10 @@ function HowItWorksComponent() {
       <div className="container mx-auto px-4 py-16">
         <div className="flex flex-col items-center">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 1.2 }}
+            initial="hidden"
+            animate="visible"
+            variants={sectionTitleVariants}
+            transition={{ delay: 1.2 }}
             className="bg-secondary/20 rounded-md px-10 py-4 mb-12"
           >
             <span className="text-xl font-inter">Detailed explanation of how everything works</span>
@@ -111,9 +94,9 @@ function HowItWorksComponent() {
 
           <motion.div
             className="flex flex-col mt-12"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 1.5 }}
+            variants={flowImageVariants}
+            initial="hidden"
+            animate="visible"
           >
             <img src={FlowImage} alt="Flow" />
           </motion.div>
