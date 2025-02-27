@@ -3,14 +3,14 @@ import { Button, Modal, ModalBody, ModalContent, ModalHeader, addToast, closeAll
 import { useNavigate } from '@tanstack/react-router';
 
 import Logo from '@/assets/Logo.svg?react';
+import Icon from '@/assets/spider-eye.png';
 import { useChainStore } from '@/contexts';
 import { authStore } from '@/contexts/auth';
-import { authService } from '@/services/auth.service';
-import Icon from './assets/Icon.png';
 import { useSignArbitrary } from '@/hooks/useSignArbitrary';
 import { useWalletClient } from '@/hooks/useWalletClient';
-import { useMutation } from '@tanstack/react-query';
+import { authService } from '@/services/auth.service';
 import { fromUint8ArrayToString } from '@/utils/fromUint8ArrayToString';
+import { useMutation } from '@tanstack/react-query';
 
 export const AuthModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { selectedChain } = useChainStore();

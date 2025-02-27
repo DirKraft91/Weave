@@ -1,22 +1,22 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { ChainWalletBase, MainWalletBase, WalletStatus } from '@cosmos-kit/core';
-import { Keplr } from '@keplr-wallet/types';
 import {
+  Button,
   Modal,
+  ModalBody,
   ModalContent,
   ModalHeader,
-  ModalBody,
-  Button,
   addToast,
   closeAll as closeAllToasts,
 } from '@heroui/react';
+import { Keplr } from '@keplr-wallet/types';
 
+import Logo from '@/assets/Logo.svg?react';
+import Icon from '@/assets/spider-default.png';
 import { wallets } from '@/config/wallets';
+import { useChainStore, walletStore } from '@/contexts';
 import { getWalletLogo } from '@/utils/common';
 import { makeKeplrChainInfo } from '@/utils/faucet';
-import { useChainStore, walletStore } from '@/contexts';
-import Logo from '@/assets/Logo.svg?react';
-import Icon from './assets/Icon.png';
 import { useState } from 'react';
 
 export const WalletConnectModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
