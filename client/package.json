@@ -22,6 +22,7 @@
     "@tanstack/react-router": "^1.105.0",
     "chain-registry": "^1.69.103",
     "framer-motion": "^12.4.4",
+    "motion": "^12.4.7",
     "osmojs": "^16.15.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
