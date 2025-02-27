@@ -68,6 +68,7 @@ function SearchComponent() {
 
   const hasNoIdentityRecords = meQuery.data?.identity_records?.length === 0;
   const isNotFound = userProofsQuery.data?.identity_records?.length === 0;
+  const hasIdentityRecords = !!userProofsQuery.data?.identity_records && userProofsQuery.data.identity_records.length > 0;
 
   const currentProviders = useMemo(() => {
     if (!userProofsQuery.data || isNotFound) return [];
@@ -127,20 +128,22 @@ function SearchComponent() {
           ))}
         </div>
 
-        <div className="relative flex flex-col items-center justify-center gap-8 mt-4">
-          <span
-            className={`text-3xl font-bold self-start transition-opacity duration-300 ${isNotFound ? 'opacity-100' : 'opacity-0'}`}
-          >
-            Not Found
-          </span>
-          <div className="relative">
-            {isNotFound ? (
-              <img src={SpiderSad} alt="Sad spider" />
-            ) : (
-              <img src={SpiderInteresting} alt="Interesting spider" />
-            )}
+        {!hasIdentityRecords && (
+          <div className="relative flex flex-col items-center justify-center gap-8 mt-4">
+            <span
+              className={`text-3xl font-bold self-start transition-opacity duration-300 ${isNotFound ? 'opacity-100' : 'opacity-0'}`}
+            >
+              Not Found
+            </span>
+            <div className="relative">
+              {isNotFound ? (
+                <img src={SpiderSad} alt="Sad spider" />
+              ) : (
+                <img src={SpiderInteresting} alt="Interesting spider" />
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <UnavailableModal isOpen={hasNoIdentityRecords} />
