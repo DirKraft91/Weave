@@ -21,7 +21,7 @@ export const Footer = () => {
   return (
     <footer className="flex gap-4 py-4 container mx-auto justify-between items-center">
       <div className="flex items-center gap-4">
-        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+        <a href="https://x.com/weavefg" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
           <FaXTwitter size={20} />
         </a>
         <a href="https://github.com/DirKraft91/Weave" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
