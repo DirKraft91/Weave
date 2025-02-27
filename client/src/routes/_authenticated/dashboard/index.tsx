@@ -1,10 +1,8 @@
 import { ProofModal } from '@/components/ProofModal';
 import { Provider, ProviderCard } from '@/components/ProviderCard/ProviderCard';
 import { PROVIDERS } from '@/config';
-import { proofService } from '@/services/proof.service';
-import { userService } from '@/services/user.service';
+import { useProviderStats, useUserMe } from '@/hooks/useApiQueries';
 import { useDisclosure } from '@heroui/react';
-import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { FaFacebook, FaGithub, FaInstagram, FaLinkedin } from 'react-icons/fa';
@@ -30,16 +28,8 @@ function DashboardComponent() {
   const proofModal = useDisclosure();
   const [selectedProvider, setSelectedProvider] = useState<Provider>();
 
-  const meProofsQuery = useQuery({
-    queryKey: ['my-proofs'],
-    queryFn: userService.fetchMe,
-  });
-
-  const providerStatsQuery = useQuery({
-    queryKey: ['provider-stats'],
-    queryFn: () => proofService.fetchProofStats(),
-    refetchInterval: 30000, // Refetch every 30 seconds
-  });
+  const meProofsQuery = useUserMe();
+  const providerStatsQuery = useProviderStats();
 
   const currentProviders = useMemo(() => {
     return providers.map((provider) => {

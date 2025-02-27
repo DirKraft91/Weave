@@ -48,3 +48,99 @@ export default tseslint.config({
   },
 });
 ```
+
+# Twitter Account Prism Client
+
+This is the client application for the Twitter Account Prism project.
+
+## API Requests with TanStack Query
+
+This project uses [TanStack Query](https://tanstack.com/query/latest) (formerly React Query) for handling API requests. TanStack Query provides a powerful and flexible way to fetch, cache, and update data in your React applications.
+
+### Custom Hooks
+
+We've created a set of custom hooks in `src/hooks/useApiQueries.ts` to encapsulate common API requests:
+
+#### User-related hooks
+
+- `useUserMe()`: Fetches the current user's data
+- `useUserByAddress(address)`: Fetches user data by wallet address
+
+#### Proof-related hooks
+
+- `useProviderStats()`: Fetches statistics about providers
+- `useApplyProof()`: Mutation for applying a proof
+- `usePrepareProof()`: Mutation for preparing a proof
+- `useTotalVerifications()`: Calculates the total number of verifications across all providers
+
+### Usage Examples
+
+#### Fetching Data
+
+```tsx
+import { useUserMe } from '@/hooks/useApiQueries';
+
+function MyComponent() {
+  const { data, isLoading, error } = useUserMe();
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return <div>Hello, {data?.id}</div>;
+}
+```
+
+#### Mutations
+
+```tsx
+import { useApplyProof } from '@/hooks/useApiQueries';
+
+function MyComponent() {
+  const applyProofMutation = useApplyProof();
+
+  const handleApplyProof = async (proofData) => {
+    try {
+      await applyProofMutation.mutateAsync(proofData);
+      // Success handling is done in the mutation hook
+    } catch {
+      // Error handling is done in the mutation hook
+    }
+  };
+
+  return (
+    <button
+      onClick={() => handleApplyProof(myProofData)}
+      disabled={applyProofMutation.isPending}
+    >
+      {applyProofMutation.isPending ? 'Applying...' : 'Apply Proof'}
+    </button>
+  );
+}
+```
+
+### Benefits
+
+- **Automatic caching**: Data is cached and only refetched when necessary
+- **Automatic refetching**: Data can be configured to refetch on window focus, at intervals, etc.
+- **Deduplication**: Multiple components requesting the same data will only trigger one request
+- **Background updates**: Data can be updated in the background without blocking the UI
+- **Optimistic updates**: UI can be updated optimistically before the server confirms the change
+- **Automatic error handling**: Errors are caught and can be handled gracefully
+- **Pagination and infinite scrolling**: Built-in support for pagination and infinite scrolling
+
+### Configuration
+
+The global TanStack Query configuration is set in `src/main.tsx`:
+
+```tsx
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: true,
+      refetchInterval: false,
+    },
+  },
+});
+```
+
+Individual queries can override these defaults with their own options.

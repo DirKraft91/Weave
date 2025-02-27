@@ -1,16 +1,16 @@
+import { useChainStore } from '@/contexts/chain';
+import { useApplyProof, usePrepareProof } from '@/hooks/useApiQueries';
+import { useAsyncExecutor } from '@/hooks/useAsyncExecutor';
 import { useEffectOnce } from '@/hooks/useEffectOnce';
-import { proofService } from '@/services/proof.service';
+import { useSignArbitrary } from '@/hooks/useSignArbitrary';
+import { useWalletClient } from '@/hooks/useWalletClient';
+import { Proof, proofService } from '@/services/proof.service';
+import { addToast, Button, Modal, ModalBody, ModalContent, ModalFooter } from '@heroui/react';
 import { Proof as ReclaimProof } from '@reclaimprotocol/js-sdk';
-import { addToast, Button, closeAll, Modal, ModalBody, ModalContent, ModalFooter } from '@heroui/react';
 import { useState } from 'react';
 import QRCode from 'react-qr-code';
 import { Provider } from '../ProviderCard';
-import { useSignArbitrary } from '@/hooks/useSignArbitrary';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Proof } from '@/services/proof.service';
-import { useWalletClient } from '@/hooks/useWalletClient';
-import { useChainStore } from '@/contexts/chain';
-import { useAsyncExecutor } from '@/hooks/useAsyncExecutor';
+
 interface ProofModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -20,9 +20,10 @@ interface ProofModalProps {
 export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
   const [requestUrl, setRequestUrl] = useState('');
   const signArbitrary = useSignArbitrary();
-  const queryClient = useQueryClient();
   const { selectedChain } = useChainStore();
   const { client: walletClient } = useWalletClient();
+  const prepareProofMutation = usePrepareProof();
+  const applyProofMutation = useApplyProof();
 
   const getDataToSign = async (proof: ReclaimProof) => {
     const proofCopy = { ...proof, publicData: undefined };
@@ -30,7 +31,7 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
     if (!account) {
       throw new Error('Account not found');
     }
-    const response = await proofService.prepareProof({
+    const response = await prepareProofMutation.mutateAsync({
       proof: proofCopy,
       provider_id: provider.providerId,
       signer: account.address,
@@ -39,52 +40,29 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
     return response.data;
   };
 
-  const saveProofMutation = useMutation({
-    mutationFn: async (proof: Proof) => {
-      try {
-        const dataToSign = await getDataToSign(proof);
-        const { signResult, account } = await signArbitrary.sign(dataToSign);
-        await proofService.applyProof({
-          signer: account.address,
-          public_key: signResult?.pub_key.value,
-          signature: signResult?.signature || '',
-          data: dataToSign,
-          provider_id: provider.providerId,
-          proof: { ...proof, publicData: undefined },
-        });
-        queryClient.invalidateQueries({
-          queryKey: ['my-proofs'],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ['provider-stats'],
-        });
-        closeAll();
-        addToast({
-          title: 'Proof applied',
-          description: 'Proof applied successfully',
-          color: 'success',
-          timeout: 3000,
-          priority: 0,
-        });
-        onClose();
-      } catch (error) {
-        closeAll();
-        addToast({
-          title: 'Error applying proof',
-          description: error instanceof Error ? error.message : 'Something went wrong',
-          color: 'danger',
-          timeout: 3000,
-          priority: 0,
-        });
-      }
-    },
-  });
+  const saveProofMutation = async (proof: Proof) => {
+    try {
+      const dataToSign = await getDataToSign(proof);
+      const { signResult, account } = await signArbitrary.sign(dataToSign);
+      await applyProofMutation.mutateAsync({
+        signer: account.address,
+        public_key: signResult?.pub_key.value,
+        signature: signResult?.signature || '',
+        data: dataToSign,
+        provider_id: provider.providerId,
+        proof: { ...proof, publicData: undefined },
+      });
+      onClose();
+    } catch {
+      // Error handling is done in the mutation hooks
+    }
+  };
 
   const verificationRequest = useAsyncExecutor(async () => {
     const url = await proofService.initializeVerificationRequest({
       providerId: provider.providerId,
       onSuccess: async (proof: Proof) => {
-        await saveProofMutation.mutateAsync(proof);
+        await saveProofMutation(proof);
       },
       onError: async (error) => {
         addToast({
@@ -103,6 +81,10 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
     verificationRequest.asyncExecute();
   });
 
+  const isLoading = verificationRequest.isLoading ||
+    prepareProofMutation.isPending ||
+    applyProofMutation.isPending;
+
   return (
     <Modal
       classNames={{
@@ -113,7 +95,7 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
       hideCloseButton
       isOpen={isOpen}
       onClose={() => {
-        if (saveProofMutation.isPending) return;
+        if (isLoading) return;
         onClose();
       }}
     >
@@ -130,8 +112,8 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
         <ModalFooter className="flex flex-col gap-6">
           <span className="text-medium text-center px-10">Scan this QR Code</span>
           <Button
-            isLoading={verificationRequest.isLoading || saveProofMutation.isPending}
-            isDisabled={verificationRequest.isLoading || saveProofMutation.isPending}
+            isLoading={isLoading}
+            isDisabled={isLoading}
             variant="solid"
             onClick={verificationRequest.asyncExecute}
           >

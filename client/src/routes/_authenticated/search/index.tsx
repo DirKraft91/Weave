@@ -4,13 +4,9 @@ import { ProviderCard } from '@/components/ProviderCard';
 import { SearchInput } from '@/components/SearchInput/SearchInput';
 import { UnavailableModal } from '@/components/UnavailableModal/UnavailableModal';
 import { PROVIDERS } from '@/config';
-import { proofService } from '@/services/proof.service';
-import { userService } from '@/services/user.service';
-import { addToast } from '@heroui/react';
-import { useQuery } from '@tanstack/react-query';
+import { useProviderStats, useUserByAddress, useUserMe } from '@/hooks/useApiQueries';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
-import { IconType } from 'react-icons';
 import { FaFacebook, FaGithub, FaInstagram, FaLinkedin } from 'react-icons/fa';
 import { FaSquareXTwitter } from 'react-icons/fa6';
 import { FcGoogle } from 'react-icons/fc';
@@ -34,37 +30,9 @@ const providers = PROVIDERS.map((provider) => ({
 function SearchComponent() {
   const [address, setAddress] = useState('');
 
-  const meQuery = useQuery({
-    queryKey: ['me'],
-    queryFn: () => userService.fetchMe(),
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchInterval: false,
-    retry: 0,
-  });
-
-  const userProofsQuery = useQuery({
-    queryKey: ['proofs', address],
-    queryFn: async () => {
-      try {
-        return userService.fetchUserByAddress(address);
-      } catch (error) {
-        addToast({
-          title: 'Error',
-          description: error instanceof Error ? error.message : 'Failed to search',
-          color: 'danger',
-          timeout: 3000,
-        });
-        return { identity_records: [] };
-      }
-    },
-    enabled: !!address,
-  });
-
-  const providerStatsQuery = useQuery({
-    queryKey: ['provider-stats'],
-    queryFn: () => proofService.fetchProofStats(),
-  });
+  const meQuery = useUserMe();
+  const userProofsQuery = useUserByAddress(address);
+  const providerStatsQuery = useProviderStats();
 
   const hasNoIdentityRecords = meQuery.data?.identity_records?.length === 0;
   const isNotFound = userProofsQuery.data?.identity_records?.length === 0;
@@ -96,57 +64,36 @@ function SearchComponent() {
   };
 
   return (
-    <div className="p-6 w-full">
-      <h2 className="text-3xl font-semibold text-white mb-8">Search by wallet</h2>
-      <div className="flex flex-col gap-6">
-        <div className="max-w-2xl">
-          <SearchInput
-            onSearch={handleSearch}
-            placeholder="Enter wallet address"
-            isLoading={userProofsQuery.isFetching}
-            debounceMs={500}
-          />
-        </div>
+    <div className="p-6 w-full pb-24">
+      <h2 className="text-3xl font-semibold text-white mb-8">Search</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {currentProviders.map((provider, index) => (
-            <ProviderCard
-              key={index}
-              provider={{
-                id: provider.providerId,
-                name: provider.name,
-                icon: provider.icon as IconType,
-                isVerified: true,
-                domain: provider.providerId.toLowerCase() + '.com',
-                link: `https://${provider.providerId.toLowerCase()}.com`,
-                value: provider.value,
-                providerId: provider.providerId,
-                userCount: provider.userCount,
-                description: provider.description,
-              }}
-            />
-          ))}
-        </div>
-
-        {!hasIdentityRecords && (
-          <div className="relative flex flex-col items-center justify-center gap-8 mt-4">
-            <span
-              className={`text-3xl font-bold self-start transition-opacity duration-300 ${isNotFound ? 'opacity-100' : 'opacity-0'}`}
-            >
-              Not Found
-            </span>
-            <div className="relative">
-              {isNotFound ? (
-                <img src={SpiderSad} alt="Sad spider" />
-              ) : (
-                <img src={SpiderInteresting} alt="Interesting spider" />
-              )}
-            </div>
-          </div>
-        )}
+      <div className="mb-8">
+        <SearchInput onSearch={handleSearch} />
       </div>
 
-      <UnavailableModal isOpen={hasNoIdentityRecords} />
+      {!address && (
+        <div className="flex flex-col items-center justify-center py-12">
+          <img src={SpiderInteresting} alt="Spider" className="w-32 h-32 mb-4" />
+          <p className="text-lg text-center text-gray-400">Enter an address to search for verified providers</p>
+        </div>
+      )}
+
+      {address && isNotFound && (
+        <div className="flex flex-col items-center justify-center py-12">
+          <img src={SpiderSad} alt="Spider" className="w-32 h-32 mb-4" />
+          <p className="text-lg text-center text-gray-400">No verified providers found for this address</p>
+        </div>
+      )}
+
+      {hasIdentityRecords && (
+        <div className="grid grid-cols-[repeat(2,333px)] gap-6 justify-start">
+          {currentProviders.map((provider) => (
+            <ProviderCard key={provider.id} provider={provider} />
+          ))}
+        </div>
+      )}
+
+      <UnavailableModal isOpen={!!hasNoIdentityRecords} />
     </div>
   );
 }
