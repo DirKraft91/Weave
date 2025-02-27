@@ -9,7 +9,7 @@ export const Header = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 flex gap-4 py-4 z-10 transition-all duration-300 ${isScrolled ? 'bg-[#141517] backdrop-blur-md shadow-md' : 'bg-transparent'
+      className={`fixed top-0 left-0 right-0 flex gap-4 py-4 z-30 transition-all duration-300 ${isScrolled ? 'bg-[#141517] backdrop-blur-md shadow-md' : 'bg-transparent'
         }`}
     >
       <div className="container mx-auto flex items-center justify-between">

@@ -14,9 +14,8 @@ export interface RootRouterContext {
 export const Route = createRootRouteWithContext<RootRouterContext>()({
   component: () => (
     <div className="min-h-screen flex flex-col h-screen overflow-hidden">
-      <div className="absolute w-full z-10 top-3">
-        <Header />
-      </div>
+      <Header />
+
 
       <Background />
 
