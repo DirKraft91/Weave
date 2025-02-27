@@ -115,12 +115,33 @@ function parseTwitterData(data: ProviderData): ParsedClaimData {
 }
 
 function parseGoogleData(data: ProviderData): ParsedClaimData {
-  return {
-    email: (data.email as string) || '',
-    fullName: (data.name as string) || '',
-    avatarUrl: (data.picture as string) || '',
-    displayValue: (data.email as string) || 'Google User',
-  };
+  try {
+    if (data.paramValues) {
+      const paramValues = data.paramValues as ProviderData;
+      let email = '';
+
+      if (paramValues.email) {
+        email = String(paramValues.email).replace(/^"|"$/g, '');
+      }
+
+      return {
+        email,
+        fullName: '',
+        displayValue: email || 'Google User',
+        buttonText: email,
+      };
+    }
+
+    return {
+      email: (data.email as string) || '',
+      fullName: (data.name as string) || '',
+      avatarUrl: (data.picture as string) || '',
+      displayValue: (data.email as string) || 'Google User',
+    };
+  } catch (error) {
+    console.error('Error parsing Google data:', error);
+    return { displayValue: 'Google User' };
+  }
 }
 
 function parseLinkedinData(data: ProviderData): ParsedClaimData {
