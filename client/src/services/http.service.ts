@@ -1,10 +1,12 @@
 import { API_URL } from '@/config';
+import { authStore } from '@/contexts';
 import axios, { AxiosInstance } from 'axios';
 import { authService } from './auth.service';
 
 class HttpService {
   private static instance: HttpService;
   private axios: AxiosInstance;
+  private refreshPromise: Promise<boolean> | null = null;
 
   private constructor() {
     this.axios = axios.create({
@@ -33,22 +35,38 @@ class HttpService {
       async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-
-          try {
-            const refreshed = await authService.refreshTokens();
-            if (refreshed) {
-              const token = authService.getAccessToken();
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-              return this.axios(originalRequest);
-            }
-          } catch (error) {
-            console.error('Error refreshing tokens:', error);
-          }
+        if (error.response?.status !== 401 ||
+          originalRequest._retry ||
+          originalRequest.url?.includes('/auth/refresh')) {
+          return Promise.reject(error);
         }
 
-        return Promise.reject(error);
+        originalRequest._retry = true;
+
+        try {
+          if (!this.refreshPromise) {
+            this.refreshPromise = authService.refreshTokens();
+          }
+
+          const refreshed = await this.refreshPromise;
+          this.refreshPromise = null;
+
+          if (refreshed) {
+            const token = authService.getAccessToken();
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return this.axios(originalRequest);
+          } else {
+            authStore.clearAuthToken();
+            authService.logout();
+            return Promise.reject(error);
+          }
+        } catch (refreshError) {
+          this.refreshPromise = null;
+          console.error('Error refreshing tokens:', refreshError);
+          authStore.clearAuthToken();
+          authService.logout();
+          return Promise.reject(error);
+        }
       },
     );
   }

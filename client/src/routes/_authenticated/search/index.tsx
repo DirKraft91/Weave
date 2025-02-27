@@ -2,6 +2,7 @@ import SpiderInteresting from '@/assets/spider-interesting.png';
 import SpiderSad from '@/assets/spider-sad.png';
 import { ProviderCard } from '@/components/ProviderCard';
 import { SearchInput } from '@/components/SearchInput/SearchInput';
+import { UnavailableModal } from '@/components/UnavailableModal/UnavailableModal';
 import { PROVIDERS } from '@/config';
 import { proofService } from '@/services/proof.service';
 import { userService } from '@/services/user.service';
@@ -33,6 +34,15 @@ const providers = PROVIDERS.map((provider) => ({
 function SearchComponent() {
   const [address, setAddress] = useState('');
 
+  const meQuery = useQuery({
+    queryKey: ['me'],
+    queryFn: () => userService.fetchMe(),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
+    retry: 0,
+  });
+
   const userProofsQuery = useQuery({
     queryKey: ['proofs', address],
     queryFn: async () => {
@@ -45,6 +55,7 @@ function SearchComponent() {
           color: 'danger',
           timeout: 3000,
         });
+        return { identity_records: [] };
       }
     },
     enabled: !!address,
@@ -55,6 +66,7 @@ function SearchComponent() {
     queryFn: () => proofService.fetchProofStats(),
   });
 
+  const hasNoIdentityRecords = meQuery.data?.identity_records?.length === 0;
   const isNotFound = userProofsQuery.data?.identity_records?.length === 0;
 
   const currentProviders = useMemo(() => {
@@ -129,6 +141,8 @@ function SearchComponent() {
           </div>
         </div>
       </div>
+
+      <UnavailableModal isOpen={hasNoIdentityRecords} />
     </div>
   );
 }

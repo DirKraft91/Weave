@@ -97,34 +97,34 @@ class AuthService {
   }
 
   async refreshTokens(): Promise<boolean> {
+    const refreshToken = this.getRefreshToken();
+
+    if (!refreshToken) {
+      return false;
+    }
+
+    const originalHeaders = { ...httpService['axios'].defaults.headers };
+
     try {
-      const refreshToken = this.getRefreshToken();
-
-      if (!refreshToken) {
-        return false;
-      }
-
-      const originalHeaders = { ...httpService['axios'].defaults.headers };
       httpService['axios'].defaults.headers.Authorization = `Bearer ${refreshToken}`;
 
-      try {
-        const data = await httpService.post<{
-          accessToken: string;
-          refreshToken: string;
-        }>('/auth/refresh');
+      const data = await httpService.post<{
+        accessToken: string;
+        refreshToken: string;
+      }>('/auth/refresh');
 
-        if (data.accessToken && data.refreshToken) {
-          this.setTokens(data.accessToken, data.refreshToken);
-          return true;
-        }
-
-        return false;
-      } finally {
-        httpService['axios'].defaults.headers = originalHeaders;
+      if (data.accessToken && data.refreshToken) {
+        this.setTokens(data.accessToken, data.refreshToken);
+        return true;
       }
-    } catch (error) {
-      console.error('Error refreshing tokens:', error);
+
+      this.clearTokens();
       return false;
+    } catch {
+      this.clearTokens();
+      return false;
+    } finally {
+      httpService['axios'].defaults.headers = originalHeaders;
     }
   }
 }
