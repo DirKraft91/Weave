@@ -21,7 +21,7 @@ class AuthService {
   private readonly ACCESS_TOKEN_KEY = AUTH_CONFIG.ACCESS_TOKEN_KEY;
   private readonly REFRESH_TOKEN_KEY = AUTH_CONFIG.REFRESH_TOKEN_KEY;
 
-  private constructor() { }
+  private constructor() {}
 
   public static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -31,7 +31,6 @@ class AuthService {
   }
 
   getAccessToken(): string | null {
-    console.log(cookieService.get(this.ACCESS_TOKEN_KEY));
     return cookieService.get(this.ACCESS_TOKEN_KEY);
   }
 

@@ -24,7 +24,7 @@ interface ProviderData {
  */
 export function parseClaimData(providerId: string, claimDataParams: string): ParsedClaimData {
   try {
-    const provider = PROVIDERS.find(p => p.providerId === providerId);
+    const provider = PROVIDERS.find((p) => p.providerId === providerId);
 
     if (!provider) {
       console.warn(`Unknown provider ID: ${providerId}`);
@@ -37,9 +37,11 @@ export function parseClaimData(providerId: string, claimDataParams: string): Par
 
       if (typeof parsedData === 'object' && parsedData !== null) {
         for (const key in parsedData) {
-          if (typeof parsedData[key] === 'string' &&
+          if (
+            typeof parsedData[key] === 'string' &&
             (parsedData[key] as string).trim().startsWith('{') &&
-            (parsedData[key] as string).trim().endsWith('}')) {
+            (parsedData[key] as string).trim().endsWith('}')
+          ) {
             try {
               parsedData[key] = JSON.parse(parsedData[key] as string);
             } catch {
@@ -87,13 +89,13 @@ function parseTwitterData(data: ProviderData): ParsedClaimData {
       const followersCount = paramValues.followers_count ? String(paramValues.followers_count) : '';
       const createdAt = paramValues.created_at ? String(paramValues.created_at) : '';
 
-      console.log('paramValues', paramValues);
-
       return {
         username,
         fullName: '',
         profileUrl: username ? `https://twitter.com/${username}` : '',
-        displayValue: username ? `@${username}${followersCount ? ` · ${followersCount} followers` : ''}` : 'Twitter User',
+        displayValue: username
+          ? `@${username}${followersCount ? ` · ${followersCount} followers` : ''}`
+          : 'Twitter User',
         createdAt: createdAt,
         followersCount: followersCount,
         buttonText: username,

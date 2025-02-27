@@ -18,7 +18,6 @@ class HttpService {
 
     this.axios.interceptors.request.use((config) => {
       const token = authService.getAccessToken();
-      console.log('token', token);
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -35,9 +34,11 @@ class HttpService {
       async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status !== 401 ||
+        if (
+          error.response?.status !== 401 ||
           originalRequest._retry ||
-          originalRequest.url?.includes('/auth/refresh')) {
+          originalRequest.url?.includes('/auth/refresh')
+        ) {
           return Promise.reject(error);
         }
 
