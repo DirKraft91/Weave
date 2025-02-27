@@ -44,7 +44,7 @@ services:
 
   weave-server:
     # comment it out for local development
-    image: dimdos95/prism-accounts
+    # image: dimdos95/prism-accounts:latest
     build: ./server
     working_dir: /usr/src/myapp
     ports:
