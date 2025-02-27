@@ -81,7 +81,7 @@ function DashboardComponent() {
         </div>
       )}
 
-      {selectedProvider && <ProofModal {...proofModal} provider={selectedProvider} />}
+      {selectedProvider && <ProofModal key={selectedProvider.id} {...proofModal} provider={selectedProvider} />}
     </div>
   );
 }
