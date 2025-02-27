@@ -32,7 +32,7 @@ impl AuthService {
             .get_or_create_signing_key(SERVICE_ID)
             .map_err(|e| AuthError::KeyStoreError(e.to_string()))?;
 
-        let service_sk = SigningKey::Ed25519(Box::new(service_keystore));
+        let service_sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &service_keystore.to_bytes())?;
         let user_pk = PublicKey::from_raw_secp256k1(
             base64::decode(&public_key)?.as_slice()
         ).ok_or(AuthError::PublicKeyError)?;

@@ -1,3 +1,4 @@
+use prism_keys::CryptoAlgorithm;
 use prism_prover::Prover;
 use std::sync::Arc;
 use keystore_rs::{KeyChain, KeyStore as _};
@@ -57,7 +58,7 @@ impl UserService {
             let user_keystore = KeyChain
                 .get_or_create_signing_key(&format!("{}/{}", self.user_id.clone(), SERVICE_ID))
                 .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
-            let user_sk = SigningKey::Ed25519(Box::new(user_keystore));
+            let user_sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &user_keystore.to_bytes())?;
             let user_vk = user_sk.verifying_key();
             let signature = user_sk.sign(&user_record.user_data);
             let signature_bundle = SignatureBundle::new(user_vk, signature);
@@ -89,12 +90,12 @@ impl UserService {
             .get_or_create_signing_key(SERVICE_ID)
             .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
 
-        let service_sk = SigningKey::Ed25519(Box::new(service_keystore));
+        let service_sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &service_keystore.to_bytes())?;
 
         let user_keystore = KeyChain
             .get_or_create_signing_key(&format!("{}/{}", self.user_id.clone(), SERVICE_ID))
             .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
-        let user_sk = SigningKey::Ed25519(Box::new(user_keystore));
+        let user_sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &user_keystore.to_bytes())?;
 
         let new_account = self.prover
             .create_account(self.user_id.clone(), SERVICE_ID.to_string(), &service_sk, &user_sk)

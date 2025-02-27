@@ -8,6 +8,7 @@ mod services;
 use api::handlers::auth::AppState;
 use diesel::MysqlConnection;
 use diesel::Connection;
+use prism_keys::CryptoAlgorithm;
 use tokio::spawn;
 use dotenv::dotenv;
 use std::env;
@@ -38,7 +39,7 @@ pub async fn register_service(prover: Arc<Prover>) -> Result<()> {
         .get_or_create_signing_key(SERVICE_ID)
         .map_err(|e| anyhow!("Error getting key from store: {}", e))?;
 
-    let sk = SigningKey::Ed25519(Box::new(keystore_sk));
+    let sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &keystore_sk.to_bytes())?;
     let vk: VerifyingKey = sk.verifying_key();
 
     debug!("Submitting transaction to register test service");
@@ -75,7 +76,7 @@ async fn main() -> Result<()> {
         .get_or_create_signing_key(SERVICE_ID)
         .map_err(|e| anyhow!("Error getting key from store: {}", e))?;
 
-    let sk = SigningKey::Ed25519(Box::new(keystore_sk.clone()));
+    let sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &keystore_sk.to_bytes())?;
 
     let cfg = Config {
         prover: true,

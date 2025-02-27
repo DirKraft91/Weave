@@ -52,3 +52,9 @@ impl From<TransactionError> for AuthError {
         AuthError::PrepareAuthDataError(error.to_string())
     }
 }
+
+impl From<anyhow::Error> for AuthError {
+    fn from(error: anyhow::Error) -> Self {
+        AuthError::PrepareAuthDataError(error.to_string())
+    }
+}
