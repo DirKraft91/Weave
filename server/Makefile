@@ -24,3 +24,9 @@ down-migraitons:
 
 new-migraiton:
 	diesel migration generate migraiton_name
+list-images:
+	docker images
+docker-tag:
+	docker tag weave-server dimdos95/prism-accounts:latest
+docker-push:
+	docker push dimdos95/prism-accounts:latest

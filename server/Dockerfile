@@ -24,6 +24,7 @@ RUN cargo install diesel_cli --no-default-features --features mysql
 
 COPY . .
 COPY .env .env
+COPY .env.prod .env.prod
 COPY migrations /usr/src/myapp/migrations
 
 # Set up database and run migrations

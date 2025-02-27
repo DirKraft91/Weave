@@ -1,6 +1,17 @@
 version: "3.8"
 
 services:
+  web:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - ./client/dist:/usr/share/nginx/html
+    restart: always
+    depends_on:
+      - weave-server
   mysql:
     image: mysql:8
     container_name: mysql_container
@@ -32,13 +43,14 @@ services:
       retries: 5
 
   weave-server:
-    image: weave-server
-    build: .
+    # comment it out for local development
+    image: dimdos95/prism-accounts
+    build: ./server
     working_dir: /usr/src/myapp
     ports:
       - "8080:8080"
     env_file:
-      - .env
+      - ./server/.env.prod
     restart: unless-stopped
     command: >
       sh -c "diesel migration run && /usr/local/bin/weave-server serve"
@@ -48,3 +60,6 @@ services:
 
 volumes:
   mysql_data:
+networks:
+  mynetwork:
+    driver: bridge
