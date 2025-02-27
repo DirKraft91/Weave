@@ -6,6 +6,17 @@ import { IconType } from 'react-icons';
 import { HiOutlineClipboardCopy } from 'react-icons/hi';
 import { UserStats } from '../UserStats';
 
+const providerIconStyles: Record<string, { bgColor: string; iconColor: string }> = {
+  twitter: { bgColor: '#ffffff', iconColor: '#000000' },
+  google: { bgColor: '#ffffff', iconColor: '#4285F4' },
+  linkedin: { bgColor: '#0A66C2', iconColor: '#ffffff' },
+  github: { bgColor: '#24292e', iconColor: '#ffffff' },
+  facebook: { bgColor: '#1877F2', iconColor: '#ffffff' },
+  binance: { bgColor: '#F0B90B', iconColor: '#000000' },
+  coinbase: { bgColor: '#0052FF', iconColor: '#ffffff' },
+  instagram: { bgColor: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)', iconColor: '#ffffff' },
+};
+
 export interface Provider {
   id: string;
   name: string;
@@ -67,12 +78,23 @@ export function ProviderCard({ provider, onVerify }: ProviderCardProps) {
     ? parseClaimData(provider.providerId, provider.claimDataParams)
     : null;
 
+  // Get icon styling based on provider ID, or use default styling
+  const iconStyle = providerIconStyles[provider.id.toLowerCase()] || { bgColor: '#333333', iconColor: '#ffffff' };
+
   return (
     <Card className="h-[208px] grid grid-rows-[min-content_auto_min-content]">
       <CardHeader className="flex flex-col items-start">
         <div className="flex justify-between w-full">
           <div className="flex items-center gap-3">
-            <Icon className="text-5xl" />
+            <div
+              className="flex items-center justify-center w-12 h-12 rounded-full"
+              style={{
+                background: iconStyle.bgColor,
+                color: iconStyle.iconColor
+              }}
+            >
+              <Icon className="text-3xl" />
+            </div>
 
             <div className="grid gap-1">
               <span className="text-white font-medium">{provider.name}</span>
