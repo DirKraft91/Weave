@@ -1,4 +1,5 @@
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
+import { parseClaimData } from '@/utils/claimDataParser';
 import { addToast, Button, Card, CardFooter, CardHeader, closeAll, Divider, Skeleton } from '@heroui/react';
 import { Link } from '@tanstack/react-router';
 import { IconType } from 'react-icons';
@@ -17,6 +18,7 @@ export interface Provider {
   link?: string;
   userCount?: number;
   description?: string;
+  claimDataParams?: string;
 }
 
 interface ProviderCardProps {
@@ -61,6 +63,10 @@ export function ProviderCard({ provider, onVerify }: ProviderCardProps) {
     });
   };
 
+  const parsedData = provider.claimDataParams
+    ? parseClaimData(provider.providerId, provider.claimDataParams)
+    : null;
+
   return (
     <Card className="h-[208px] grid grid-rows-[min-content_auto_min-content]">
       <CardHeader className="flex flex-col items-start">
@@ -84,6 +90,15 @@ export function ProviderCard({ provider, onVerify }: ProviderCardProps) {
         {provider.description && (
           <p className="text-sm text-content2-foreground mt-3">{provider.description}</p>
         )}
+
+        {parsedData && (
+          <div className="mt-2">
+            <p className="text-small text-default-500">{parsedData.displayValue}</p>
+            {parsedData.createdAt && (
+              <p className="text-xs text-default-400 mt-1">Joined: {new Date(parsedData.createdAt).toLocaleDateString()}</p>
+            )}
+          </div>
+        )}
       </CardHeader>
 
       <Divider className="self-end" />
@@ -97,7 +112,7 @@ export function ProviderCard({ provider, onVerify }: ProviderCardProps) {
             endContent={<HiOutlineClipboardCopy className="text-xl" />}
             onClick={handleCopy}
           >
-            {provider.value}
+            {parsedData?.buttonText}
           </Button>
         ) : (
           <Button className="w-full hover:bg-secondary hover:text-white" variant="bordered" color="secondary" onClick={() => onVerify?.(provider)}>

@@ -5,7 +5,7 @@ export const PROVIDERS = [
     domain: 'x.com',
     link: 'https://x.com',
     providerId: 'e6fe962d-8b4e-4ce5-abcc-3d21c88bd64a',
-    userCount: 25,
+    userCount: 0,
     description: 'Verifies twitter profile of user',
   },
   {

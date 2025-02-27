@@ -53,6 +53,7 @@ function DashboardComponent() {
         isVerified: !!record,
         value: '',
         userCount,
+        claimDataParams: record?.claim_data_params,
       };
     });
   }, [meProofsQuery.data, providerStatsQuery.data]);

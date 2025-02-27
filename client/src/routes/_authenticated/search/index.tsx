@@ -84,6 +84,7 @@ function SearchComponent() {
           isVerified: true,
           value: '',
           userCount,
+          claimDataParams: record.claim_data_params,
         };
       })
       .filter((provider) => provider !== null);
