@@ -155,14 +155,32 @@ function parseLinkedinData(data: ProviderData): ParsedClaimData {
 }
 
 function parseGithubData(data: ProviderData): ParsedClaimData {
-  const username = (data.login as string) || '';
-  return {
-    username,
-    fullName: (data.name as string) || '',
-    profileUrl: username ? `https://github.com/${username}` : '',
-    avatarUrl: (data.avatar_url as string) || '',
-    displayValue: username || 'GitHub User',
-  };
+  try {
+    if (data.paramValues) {
+      const paramValues = data.paramValues as ProviderData;
+      const username = (paramValues.username as string) || '';
+
+      return {
+        username,
+        fullName: '',
+        profileUrl: username ? `https://github.com/${username}` : '',
+        displayValue: username || 'GitHub User',
+        buttonText: username,
+      };
+    }
+
+    const username = (data.login as string) || '';
+    return {
+      username,
+      fullName: (data.name as string) || '',
+      profileUrl: username ? `https://github.com/${username}` : '',
+      avatarUrl: (data.avatar_url as string) || '',
+      displayValue: username || 'GitHub User',
+    };
+  } catch (error) {
+    console.error('Error parsing GitHub data:', error);
+    return { displayValue: 'GitHub User' };
+  }
 }
 
 function parseFacebookData(data: ProviderData): ParsedClaimData {
