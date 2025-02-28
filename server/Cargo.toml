@@ -17,9 +17,9 @@ anyhow = "1.0.89"
 thiserror = "2.0.11"
 tower-http = { version = "0.3", features = ["cors"] }
 http = "0.2"
-base64 = "0.20.0"
+base64 = "0.22.0"
 ecdsa = { version =  "0.14.8", features = ["der", "arithmetic", "digest"] }
-k256 = "0.11.6"
+k256 = "0.13.4"
 tendermint = { version =  "0.28.0", features = ["secp256k1"] }
 chrono = "0.4.39"
 jsonwebtoken = "9.2"
@@ -30,8 +30,8 @@ prism-storage = { git = "https://github.com/deltadevsde/prism", branch = "main" 
 prism-da = { git = "https://github.com/deltadevsde/prism", branch = "main" }
 prism-client = { git = "https://github.com/deltadevsde/prism", branch = "main" }
 prism-keys = { git = "https://github.com/deltadevsde/prism", branch = "main" }
-keystore-rs = { version = "0.3" }
+keystore-rs = { version = "0.3.1" }
 headers = "0.3"
 async-trait = "0.1"
 diesel = { version = "2.1", features = ["mysql"] }
-bincode = "1.3"
+bincode = "1.3.3"

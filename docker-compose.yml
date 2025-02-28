@@ -7,8 +7,13 @@ services:
       dockerfile: Dockerfile
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./client/dist:/usr/share/nginx/html
+      # - /home/dima/certificates:/etc/ssl/certs
+    environment:
+      - NGINX_SSL_CERT=/etc/ssl/certs/fullchain.pem
+      - NGINX_SSL_KEY=/etc/ssl/certs/privkey.pem
     restart: always
     depends_on:
       - weave-server

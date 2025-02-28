@@ -28,4 +28,3 @@ target
 
 #env
 .env
-.env.prod

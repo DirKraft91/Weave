@@ -334,27 +334,40 @@ scp -r ~/Documents/Projects/my-projects/twitter-acc-prism/client dima@159.223.29
 scp -r ~/Documents/Projects/my-projects/twitter-acc-prism/server dima@159.223.29.217:/app
 scp -r ~/Documents/Projects/my-projects/twitter-acc-prism/docker-compose.yml dima@159.223.29.217:/app
 
-http://159.223.29.217:8080/
+Host ip
+http://159.223.29.217/
 
+hosts:
+http://weavefg.com/
 https://www.duckdns.org/
 http://prism-accounts.duckdns.org
 
 sudo systemctl stop nginx
 
 test nginx config
-
 `nginx -t`
-
 docker network
-
 create
 `docker network create mynetwork`
 
 ssl certificates
-
 docker exec -it <nginx-container-id> sh
 
 certbot --nginx -d weavefg.com -d www.weavefg.com
 certbot --nginx -d prism-accounts.duckdns.org
 
 echo "0 0 \* \* \* certbot renew --quiet && nginx -s reload" >> /etc/crontabs/root
+
+ssl sertificates
+
+`sudo certbot certonly --standalone -d weavefg.com -d prism-accounts.duckdns.org --agree-tos --email dimdos95@gmail.com`
+
+sudo cp /etc/letsencrypt/live/prism-accounts.duckdns.org/privkey.pem /home/dima/certificates/ && sudo cp /etc/letsencrypt/live/prism-accounts.duckdns.org/fullchain.pem /home/dima/certificates/
+
+sudo cp /etc/letsencrypt/live/prism-accounts.duckdns.org/fullchain.pem /home/dima/certificates/ && sudo cp /etc/letsencrypt/live/prism-accounts.duckdns.org/privkey.pem /home/dima/certificates/
+
+# sudo mkdir -p /home/youruser/certificates
+
+# sudo cp /etc/letsencrypt/live/prism-accounts.duckdns.org/fullchain.pem /home/youruser/certificates/
+
+# sudo cp /etc/letsencrypt/live/prism-accounts.duckdns.org/privkey.pem /home/youruser/certificates/

@@ -31,7 +31,7 @@ COPY migrations /usr/src/myapp/migrations
 ENV DATABASE_URL="mysql://myuser:mypassword@mysql:3306/mydatabase"
 
 # Build the Rust app
-RUN just build
+RUN cargo clean && just build
 
 EXPOSE 8080
 
