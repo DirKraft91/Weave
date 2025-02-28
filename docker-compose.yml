@@ -10,7 +10,8 @@ services:
       - "443:443"
     volumes:
       - ./client/dist:/usr/share/nginx/html
-      # - /home/dima/certificates:/etc/ssl/certs
+      - /home/dima/certificates:/etc/ssl/certs
+      - /home/dima/certificates:/usr/lib/ssl/certs:ro
     environment:
       - NGINX_SSL_CERT=/etc/ssl/certs/fullchain.pem
       - NGINX_SSL_KEY=/etc/ssl/certs/privkey.pem
@@ -62,6 +63,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    volumes:
+      - /home/dima/certificates:/usr/lib/ssl/certs:ro
 
 volumes:
   mysql_data:

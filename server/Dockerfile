@@ -23,7 +23,6 @@ ENV PATH="/root/.sp1/bin:$PATH"
 RUN cargo install diesel_cli --no-default-features --features mysql
 
 COPY . .
-COPY .env .env
 COPY .env.prod .env.prod
 COPY migrations /usr/src/myapp/migrations
 
@@ -37,7 +36,7 @@ EXPOSE 8080
 
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends libssl3 libmariadb-dev-compat libmariadb-dev && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libssl3 libmariadb-dev-compat libmariadb-dev ca-certificates && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled app and diesel CLI from the builder
 COPY --from=builder /usr/src/myapp/target/release/weave-server /usr/local/bin/weave-server
