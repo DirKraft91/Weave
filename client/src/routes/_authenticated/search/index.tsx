@@ -1,11 +1,12 @@
 import SpiderInteresting from '@/assets/spider-interesting.png';
 import SpiderSad from '@/assets/spider-sad.png';
-import { ProviderCard } from '@/components/ProviderCard';
+import { ProviderCard } from '@/components/ProviderCard/ProviderCard';
 import { SearchInput } from '@/components/SearchInput/SearchInput';
 import { UnavailableModal } from '@/components/UnavailableModal/UnavailableModal';
 import { PROVIDERS } from '@/config';
 import { proofService } from '@/services/proof.service';
 import { userService } from '@/services/user.service';
+import { parseClaimData } from '@/utils/claimDataParser';
 import { addToast } from '@heroui/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -80,10 +81,12 @@ function SearchComponent() {
 
         const userCount = provider.providerId ? (providerStatsQuery.data?.[provider.providerId] ?? 0) : 0;
 
+        const parsedData = parseClaimData(provider.providerId, record.claim_data_params);
+
         return {
           ...provider,
           isVerified: true,
-          value: '',
+          value: parsedData.buttonText || parsedData.username || parsedData.email || '',
           userCount,
           claimDataParams: record.claim_data_params,
         };
@@ -113,16 +116,17 @@ function SearchComponent() {
             <ProviderCard
               key={index}
               provider={{
-                id: provider.providerId,
+                id: provider.id,
                 name: provider.name,
                 icon: provider.icon as IconType,
                 isVerified: true,
-                domain: provider.providerId.toLowerCase() + '.com',
-                link: `https://${provider.providerId.toLowerCase()}.com`,
+                domain: provider.domain,
+                link: provider.link,
                 value: provider.value,
                 providerId: provider.providerId,
                 userCount: provider.userCount,
                 description: provider.description,
+                claimDataParams: provider.claimDataParams,
               }}
             />
           ))}
