@@ -8,13 +8,16 @@ mod services;
 use api::handlers::auth::AppState;
 use diesel::MysqlConnection;
 use diesel::Connection;
+use keystore_rs::KeyStore;
 use prism_keys::CryptoAlgorithm;
 use tokio::spawn;
 use dotenv::dotenv;
 use std::env;
 use std::sync::Arc;
-
-use keystore_rs::{KeyChain, KeyStore};
+use std::fs;
+use std::path::Path;
+use shellexpand;
+use keystore_rs::FileStore;
 use prism_da::{memory::InMemoryDataAvailabilityLayer, DataAvailabilityLayer};
 use prism_storage::inmemory::InMemoryDatabase;
 use prism_prover::{webserver::WebServerConfig, Config, Prover};
@@ -22,12 +25,12 @@ use log::debug;
 use prism_client::SigningKey;
 use anyhow::{anyhow, Result};
 use prism_client::{
-    VerifyingKey, 
     PrismApi,
     PendingTransaction,
 };
 
 pub static SERVICE_ID: &str = "weave_service";
+pub static KEYSTORE_PATH: &str = "~/.prism/keystore.json";
 
 pub async fn register_service(prover: Arc<Prover>) -> Result<()> {
     if prover.get_account(SERVICE_ID).await?.account.is_some() {
@@ -35,12 +38,12 @@ pub async fn register_service(prover: Arc<Prover>) -> Result<()> {
         return Ok(());
     }
 
-    let keystore_sk = KeyChain
+    let sk = FileStore::new(KEYSTORE_PATH).unwrap()
         .get_or_create_signing_key(SERVICE_ID)
         .map_err(|e| anyhow!("Error getting key from store: {}", e))?;
+    let sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &sk.to_bytes())?;
 
-    let sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &keystore_sk.to_bytes())?;
-    let vk: VerifyingKey = sk.verifying_key();
+    let vk = sk.verifying_key();
 
     debug!("Submitting transaction to register test service");
     prover
@@ -57,9 +60,33 @@ fn establish_connection() -> MysqlConnection {
     MysqlConnection::establish(&database_url).expect("Error connecting to database")
 }
 
+fn init_keystore() -> Result<()> {
+    let keystore_path = shellexpand::tilde(KEYSTORE_PATH);
+    let path = Path::new(keystore_path.as_ref());
+    
+    if !path.exists() {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        
+        let symmetric_key = env::var("SYMMETRIC_KEY")
+            .expect("SYMMETRIC_KEY must be set");
+        let keystore_content = format!(r#"{{
+            "symmetric_key": "{}",
+            "keys": {{}}
+        }}"#, symmetric_key);
+        fs::write(path, keystore_content)?;
+    }
+
+    Ok(())
+}
+
+
+
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv().ok();
+    init_keystore()?;
     let conn = establish_connection();
     let repo = entities::user_repo::UserRepo::new(conn);
 
@@ -72,11 +99,11 @@ async fn main() -> Result<()> {
     let db = InMemoryDatabase::new();
     let (da_layer, _, _) = InMemoryDataAvailabilityLayer::new(5);
 
-    let keystore_sk = KeyChain
+
+    let sk = FileStore::new(KEYSTORE_PATH).unwrap()
         .get_or_create_signing_key(SERVICE_ID)
         .map_err(|e| anyhow!("Error getting key from store: {}", e))?;
-
-    let sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &keystore_sk.to_bytes())?;
+    let sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &sk.to_bytes())?;
 
     let cfg = Config {
         prover: true,

@@ -1,7 +1,7 @@
 use prism_keys::CryptoAlgorithm;
 use prism_prover::Prover;
 use std::sync::Arc;
-use keystore_rs::{KeyChain, KeyStore as _};
+use keystore_rs::{FileStore, KeyStore as _};
 use log::debug;
 
 use prism_client::{
@@ -10,7 +10,7 @@ use prism_client::{
 use crate::{domain::{
     errors::user_errors::UserError, 
     models::user::{User, UserIdentityRecord, UserRecord},
-}, utils::arbitrary_message::from_arbitrary_message_bytes_to_data_structure};
+}, utils::arbitrary_message::from_arbitrary_message_bytes_to_data_structure, KEYSTORE_PATH};
 use crate::SERVICE_ID;
 
 pub struct UserService {
@@ -55,10 +55,10 @@ impl UserService {
                 Err(e) => return Err(UserError::InvalidSignature(format!("Invalid signature: {:?}", e))),
             }
 
-            let user_keystore = KeyChain
+            let user_sk = FileStore::new(KEYSTORE_PATH).unwrap()
                 .get_or_create_signing_key(&format!("{}/{}", self.user_id.clone(), SERVICE_ID))
                 .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
-            let user_sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &user_keystore.to_bytes())?;
+            let user_sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &user_sk.to_bytes())?;
             let user_vk = user_sk.verifying_key();
             let signature = user_sk.sign(&user_record.user_data);
             let signature_bundle = SignatureBundle::new(user_vk, signature);
@@ -86,16 +86,15 @@ impl UserService {
         user_record.signature_bundle.verifying_key.verify_signature(&user_record.user_data, &user_record.signature_bundle.signature)
             .map_err(|_| UserError::InvalidSignature(format!("Invalid signature: {:?}", user_record.signature_bundle.signature)))?;
 
-        let service_keystore = KeyChain
+        let service_sk = FileStore::new(KEYSTORE_PATH).unwrap()
             .get_or_create_signing_key(SERVICE_ID)
-            .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
+            .map_err(|e| UserError::KeyStoreError(e.to_string()))?;    
+        let service_sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &service_sk.to_bytes())?;
 
-        let service_sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &service_keystore.to_bytes())?;
-
-        let user_keystore = KeyChain
+        let user_sk = FileStore::new(KEYSTORE_PATH).unwrap()
             .get_or_create_signing_key(&format!("{}/{}", self.user_id.clone(), SERVICE_ID))
             .map_err(|e| UserError::KeyStoreError(e.to_string()))?;
-        let user_sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &user_keystore.to_bytes())?;
+        let user_sk = SigningKey::from_algorithm_and_bytes(CryptoAlgorithm::Secp256k1, &user_sk.to_bytes())?;
 
         let new_account = self.prover
             .create_account(self.user_id.clone(), SERVICE_ID.to_string(), &service_sk, &user_sk)

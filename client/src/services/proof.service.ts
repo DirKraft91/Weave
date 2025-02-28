@@ -63,7 +63,7 @@ class ProofService {
   }
 
   async fetchProofStats(): Promise<ProofStats> {
-    const response = await httpService.post<{ stats: [string, number][] }>('/proof-stats');
+    const response = await httpService.get<{ stats: [string, number][] }>('/proof-stats');
 
     // Transform the array of tuples into an object for easier access
     return response.stats.reduce((acc, [providerId, count]) => {

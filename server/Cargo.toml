@@ -35,3 +35,4 @@ headers = "0.3"
 async-trait = "0.1"
 diesel = { version = "2.1", features = ["mysql"] }
 bincode = "1.3.3"
+shellexpand = "3.1.0"

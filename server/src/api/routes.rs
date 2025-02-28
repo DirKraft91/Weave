@@ -33,7 +33,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/auth/prepare", post(prepare_auth_data))
         .route("/api/auth", post(auth_wallet))
         .route("/api/auth/refresh", post(refresh_tokens))
-        .route("/api/proof-stats", post(get_applied_proof_stats));
+        .route("/api/proof-stats", get(get_applied_proof_stats));
 
     let protected_routes = Router::new()
         .route("/api/proof/prepare", post(prepare_to_apply_proof))
