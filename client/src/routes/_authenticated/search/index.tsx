@@ -71,7 +71,7 @@ function SearchComponent() {
     if (!userProofsQuery.data || isNotFound) return [];
 
     return userProofsQuery.data?.identity_records
-      .map((record) => {
+      ?.map((record) => {
         const provider = providers.find((p) => p.providerId === record.provider_id);
         if (!provider) return null;
 
@@ -87,7 +87,7 @@ function SearchComponent() {
           claimDataParams: record.claim_data_params,
         };
       })
-      .filter((provider) => provider !== null);
+      .filter((provider) => provider !== null) ?? [];
   }, [userProofsQuery.data, isNotFound, providerStatsQuery.data]);
 
   const handleSearch = (query: string) => {
@@ -107,7 +107,7 @@ function SearchComponent() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-[repeat(2,333px)] gap-6 justify-start">
           {currentProviders.map((provider, index) => (
             <ProviderCard
               key={index}

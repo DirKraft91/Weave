@@ -16,6 +16,18 @@ interface ProviderData {
   [key: string]: unknown;
 }
 
+interface ResponseRedaction {
+  regex?: string;
+  jsonPath?: string;
+  xPath?: string;
+}
+
+interface ResponseMatch {
+  invert?: boolean;
+  type?: string;
+  value?: string;
+}
+
 /**
  * Parses the claim_data_params string based on the provider_id
  * @param providerId ID of the provider
@@ -36,22 +48,10 @@ export function parseClaimData(providerId: string, claimDataParams: string): Par
       parsedData = JSON.parse(claimDataParams);
 
       if (typeof parsedData === 'object' && parsedData !== null) {
-        for (const key in parsedData) {
-          if (
-            typeof parsedData[key] === 'string' &&
-            (parsedData[key] as string).trim().startsWith('{') &&
-            (parsedData[key] as string).trim().endsWith('}')
-          ) {
-            try {
-              parsedData[key] = JSON.parse(parsedData[key] as string);
-            } catch {
-              // do nothing
-            }
-          }
-        }
+        parsedData = parseNestedObjects(parsedData);
       }
-    } catch {
-      console.warn(`Failed to parse claim_data_params as JSON: ${claimDataParams}`);
+    } catch (error) {
+      console.warn(`Failed to parse claim_data_params as JSON: ${claimDataParams}`, error);
       return { displayValue: 'Invalid data' };
     }
 
@@ -79,6 +79,43 @@ export function parseClaimData(providerId: string, claimDataParams: string): Par
     console.error('Error parsing claim data:', error);
     return { displayValue: 'Error' };
   }
+}
+
+/**
+ * Recursively processes nested objects, trying to parse JSON strings
+ * @param obj Object to process
+ * @returns Processed object
+ */
+function parseNestedObjects(obj: ProviderData): ProviderData {
+  const result: ProviderData = {};
+
+  for (const key in obj) {
+    const value = obj[key];
+
+    if (typeof value === 'string') {
+      if (value.trim().startsWith('{') && value.trim().endsWith('}')) {
+        try {
+          result[key] = parseNestedObjects(JSON.parse(value));
+        } catch {
+          result[key] = value;
+        }
+      } else {
+        result[key] = value;
+      }
+    } else if (typeof value === 'object' && value !== null) {
+      if (Array.isArray(value)) {
+        result[key] = value.map(item =>
+          typeof item === 'object' && item !== null ? parseNestedObjects(item as ProviderData) : item
+        );
+      } else {
+        result[key] = parseNestedObjects(value as ProviderData);
+      }
+    } else {
+      result[key] = value;
+    }
+  }
+
+  return result;
 }
 
 function parseTwitterData(data: ProviderData): ParsedClaimData {
@@ -147,13 +184,97 @@ function parseGoogleData(data: ProviderData): ParsedClaimData {
 }
 
 function parseLinkedinData(data: ProviderData): ParsedClaimData {
-  const username = (data.vanity_name as string) || (data.id as string) || '';
-  return {
-    username,
-    fullName: (data.name as string) || '',
-    profileUrl: username ? `https://linkedin.com/in/${username}` : '',
-    displayValue: (data.name as string) || username || 'LinkedIn User',
-  };
+  try {
+    if (data.paramValues) {
+      const paramValues = data.paramValues as ProviderData;
+      let username = (paramValues.Username as string) || '';
+
+      if (username) {
+        username = username.replace(/^["']|["']$/g, '');
+      }
+
+      let extractedUsername = '';
+      if (data.responseRedactions && Array.isArray(data.responseRedactions)) {
+        for (const redaction of data.responseRedactions) {
+          if (typeof redaction === 'object' && redaction !== null) {
+            const typedRedaction = redaction as ResponseRedaction;
+            if (typedRedaction.regex && typedRedaction.regex.includes('publicIdentifier')) {
+              extractedUsername = username;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!extractedUsername && data.responseMatches && Array.isArray(data.responseMatches)) {
+        for (const match of data.responseMatches) {
+          if (typeof match === 'object' && match !== null) {
+            const typedMatch = match as ResponseMatch;
+            if (typedMatch.value && typedMatch.value.includes('{{Username}}')) {
+              extractedUsername = username;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!extractedUsername && data.url) {
+        const url = data.url as string;
+        if (url.includes('linkedin.com/in/')) {
+          const matches = url.match(/linkedin\.com\/in\/([^/?&#]+)/);
+          if (matches && matches[1]) {
+            extractedUsername = matches[1];
+          }
+        }
+      }
+
+      if (!extractedUsername && data.body) {
+        const body = data.body as string;
+        if (body.includes('vanityName') || body.includes('publicIdentifier')) {
+          const matches = body.match(/vanityName=([^&]+)|publicIdentifier=([^&]+)/);
+          if (matches && (matches[1] || matches[2])) {
+            extractedUsername = matches[1] || matches[2] || '';
+          }
+        }
+      }
+
+      if (!extractedUsername && data.headers) {
+        const headers = data.headers as Record<string, string>;
+        if (headers.Referer && headers.Referer.includes('linkedin.com/in/')) {
+          const matches = headers.Referer.match(/linkedin\.com\/in\/([^/?&#]+)/);
+          if (matches && matches[1]) {
+            extractedUsername = matches[1];
+          }
+        }
+      }
+
+      if (extractedUsername) {
+        extractedUsername = extractedUsername.replace(/^["']|["']$/g, '');
+        extractedUsername = decodeURIComponent(extractedUsername);
+      }
+
+      const finalUsername = extractedUsername || username;
+
+      return {
+        username: finalUsername,
+        fullName: '',
+        profileUrl: finalUsername ? `https://linkedin.com/in/${finalUsername}` : '',
+        displayValue: finalUsername || 'LinkedIn User',
+        buttonText: finalUsername,
+      };
+    }
+
+    const username = (data.vanity_name as string) || (data.id as string) || '';
+    return {
+      username,
+      fullName: (data.name as string) || '',
+      profileUrl: username ? `https://linkedin.com/in/${username}` : '',
+      displayValue: (data.name as string) || username || 'LinkedIn User',
+    };
+  } catch (error) {
+    console.error('Error parsing LinkedIn data:', error);
+    return { displayValue: 'LinkedIn User' };
+  }
 }
 
 function parseGithubData(data: ProviderData): ParsedClaimData {
