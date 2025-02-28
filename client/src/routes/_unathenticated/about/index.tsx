@@ -1,4 +1,6 @@
+import { useAboutAnimations } from '@/hooks/useAnimations';
 import { createFileRoute } from '@tanstack/react-router';
+import { motion } from 'framer-motion';
 import { Copyright } from '../../../components/Copyright';
 
 const sections = [
@@ -21,26 +23,57 @@ const sections = [
 ];
 
 function AboutComponent() {
+  const {
+    containerVariants,
+    sectionVariants,
+    titleVariants,
+    contentVariants,
+    copyrightVariants
+  } = useAboutAnimations();
+
   return (
     <div className="container mx-auto px-4 pt-36 pb-6 min-h-screen flex flex-col justify-between">
-      <div className="grid md:grid-cols-2 gap-16">
+      <motion.div
+        className="grid md:grid-cols-2 gap-16"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        viewport={{ once: true }}
+      >
         {sections.map((section, index) => (
-          <div
+          <motion.div
             key={index}
             className="flex flex-col gap-4 p-8 rounded-lg hover:bg-secondary/10 transition-colors"
+            variants={sectionVariants}
+            whileHover={{
+              scale: 1.03,
+              boxShadow: "0 10px 20px rgba(0,0,0,0.1)",
+              backgroundColor: "rgba(var(--color-secondary), 0.15)"
+            }}
           >
-            <h2 className="text-4xl font-medium text-secondary">
+            <motion.h2
+              className="text-4xl font-medium text-secondary"
+              variants={titleVariants}
+            >
               {section.title}
-            </h2>
-            <p className="text-lg text-content leading-relaxed">
+            </motion.h2>
+            <motion.p
+              className="text-lg text-content leading-relaxed"
+              variants={contentVariants}
+            >
               {section.content}
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
         ))}
-      </div>
-      <div className="w-full z-10 flex justify-center items-center relative">
+      </motion.div>
+      <motion.div
+        className="w-full z-10 flex justify-center items-center relative"
+        variants={copyrightVariants}
+        initial="hidden"
+        animate="visible"
+      >
         <Copyright />
-      </div>
+      </motion.div>
     </div>
   );
 }
