@@ -1,8 +1,8 @@
 import { ProofModal } from '@/components/ProofModal';
 import { Provider, ProviderCard } from '@/components/ProviderCard/ProviderCard';
 import { PROVIDERS } from '@/config';
+import { useUserMe } from '@/hooks/useUserMe';
 import { proofService } from '@/services/proof.service';
-import { userService } from '@/services/user.service';
 import { useDisclosure } from '@heroui/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -30,15 +30,12 @@ function DashboardComponent() {
   const proofModal = useDisclosure();
   const [selectedProvider, setSelectedProvider] = useState<Provider>();
 
-  const meProofsQuery = useQuery({
-    queryKey: ['my-proofs'],
-    queryFn: userService.fetchMe,
-  });
+  const meProofsQuery = useUserMe();
 
   const providerStatsQuery = useQuery({
     queryKey: ['provider-stats'],
     queryFn: () => proofService.fetchProofStats(),
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
   });
 
   const currentProviders = useMemo(() => {
