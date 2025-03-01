@@ -1,7 +1,7 @@
 FROM nginx:alpine
 
 # Install Certbot for SSL
-RUN apk add --no-cache certbot certbot-nginx
+RUN apk add --no-cache certbot certbot-nginx ca-certificates
 
 # Copy the build output to Nginx's web directory
 COPY ./dist /usr/share/nginx/html
