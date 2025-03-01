@@ -64,6 +64,7 @@ services:
       mysql:
         condition: service_healthy
     volumes:
+      - /home/dima/certificates:/etc/ssl/certs
       - /home/dima/certificates:/usr/lib/ssl/certs:ro
 
 volumes:
