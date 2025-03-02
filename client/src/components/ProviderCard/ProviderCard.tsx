@@ -1,6 +1,6 @@
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { parseClaimData } from '@/utils/claimDataParser';
-import { addToast, Button, Card, CardFooter, CardHeader, closeAll, Divider, Skeleton } from '@heroui/react';
+import { addToast, Button, Card, CardFooter, CardHeader, closeAll, Divider, Skeleton, Tooltip } from '@heroui/react';
 import { Link } from '@tanstack/react-router';
 import { IconType } from 'react-icons';
 import { HiOutlineClipboardCopy } from 'react-icons/hi';
@@ -74,9 +74,7 @@ export function ProviderCard({ provider, onVerify }: ProviderCardProps) {
     });
   };
 
-  const parsedData = provider.claimDataParams
-    ? parseClaimData(provider.providerId, provider.claimDataParams)
-    : null;
+  const parsedData = provider.claimDataParams ? parseClaimData(provider.providerId, provider.claimDataParams) : null;
 
   // Get icon styling based on provider ID, or use default styling
   const iconStyle = providerIconStyles[provider.id.toLowerCase()] || { bgColor: '#333333', iconColor: '#ffffff' };
@@ -90,7 +88,7 @@ export function ProviderCard({ provider, onVerify }: ProviderCardProps) {
               className="flex items-center justify-center w-12 h-12 rounded-full"
               style={{
                 background: iconStyle.bgColor,
-                color: iconStyle.iconColor
+                color: iconStyle.iconColor,
               }}
             >
               <Icon className="text-3xl" />
@@ -104,20 +102,18 @@ export function ProviderCard({ provider, onVerify }: ProviderCardProps) {
             </div>
           </div>
 
-          {provider.userCount !== undefined && (
-            <UserStats count={provider.userCount} />
-          )}
+          {provider.userCount !== undefined && <UserStats count={provider.userCount} />}
         </div>
 
-        {provider.description && (
-          <p className="text-sm text-content2-foreground mt-3">{provider.description}</p>
-        )}
+        {provider.description && <p className="text-sm text-content2-foreground mt-3">{provider.description}</p>}
 
         {parsedData && (
           <div className="mt-2">
             <p className="text-small text-default-500">{parsedData.displayValue}</p>
             {parsedData.createdAt && (
-              <p className="text-xs text-default-400 mt-1">Joined: {new Date(parsedData.createdAt).toLocaleDateString()}</p>
+              <p className="text-xs text-default-400 mt-1">
+                Joined: {new Date(parsedData.createdAt).toLocaleDateString()}
+              </p>
             )}
           </div>
         )}
@@ -127,17 +123,24 @@ export function ProviderCard({ provider, onVerify }: ProviderCardProps) {
 
       <CardFooter>
         {provider.isVerified ? (
-          <Button
-            className="w-full"
-            color="secondary"
-            variant="solid"
-            endContent={<HiOutlineClipboardCopy className="text-xl" />}
-            onClick={handleCopy}
-          >
-            {parsedData?.buttonText}
-          </Button>
+          <Tooltip content="Copy to clipboard" placement="bottom">
+            <Button
+              className="w-full"
+              color="secondary"
+              variant="solid"
+              endContent={<HiOutlineClipboardCopy className="text-xl" />}
+              onClick={handleCopy}
+            >
+              {parsedData?.buttonText}
+            </Button>
+          </Tooltip>
         ) : (
-          <Button className="w-full hover:bg-secondary hover:text-white" variant="bordered" color="secondary" onClick={() => onVerify?.(provider)}>
+          <Button
+            className="w-full hover:bg-secondary hover:text-white"
+            variant="bordered"
+            color="secondary"
+            onClick={() => onVerify?.(provider)}
+          >
             Approve
           </Button>
         )}

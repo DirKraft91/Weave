@@ -35,7 +35,6 @@ function DashboardComponent() {
   const providerStatsQuery = useQuery({
     queryKey: ['provider-stats'],
     queryFn: () => proofService.fetchProofStats(),
-    refetchInterval: 30000,
   });
 
   const currentProviders = useMemo(() => {

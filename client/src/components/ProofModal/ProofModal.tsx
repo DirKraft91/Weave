@@ -53,7 +53,7 @@ export function ProofModal({ isOpen, onClose, provider }: ProofModalProps) {
           proof: { ...proof, publicData: undefined },
         });
         queryClient.invalidateQueries({
-          queryKey: ['my-proofs'],
+          queryKey: ['me'],
         });
         queryClient.invalidateQueries({
           queryKey: ['provider-stats'],
