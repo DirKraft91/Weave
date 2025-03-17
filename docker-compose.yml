@@ -65,7 +65,13 @@ services:
         condition: service_healthy
     volumes:
       - /home/dima/certificates:/etc/ssl/certs
-      - /home/dima/certificates:/usr/lib/ssl/certs
+      - /home/dima/certificates:/usr/lib/ssl/certs:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   mysql_data:
